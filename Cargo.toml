@@ -1,0 +1,11 @@
+[package]
+name = "h1emu-core"
+version = "0.1.0"
+edition = "2018"
+[dependencies]
+wasm-bindgen = "*"
+base64 = "0.13.0"
+uuid = {version = "0.8", features = ["serde", "v4","wasm-bindgen"] }
+getrandom = { version = "0.2", features = ["js"] }
+[lib]
+crate-type = ["cdylib", "rlib"]
