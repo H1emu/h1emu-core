@@ -2,11 +2,6 @@ use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-extern "C" {
-    pub fn alert(s: &str);
-}
-
-#[wasm_bindgen]
 pub fn generate_random_guid() -> String {
     let my_uuid: Uuid = Uuid::new_v4();
     let array_bytes = my_uuid.as_bytes();
