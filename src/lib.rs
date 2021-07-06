@@ -11,6 +11,7 @@ pub fn generate_random_guid() -> String {
     let my_uuid: Uuid = Uuid::new_v4();
     let array_bytes = my_uuid.as_bytes();
     let mut rand_id: String = String::new();
+    rand_id.push_str("0x");
     for byte in array_bytes {
         let formatted_byte: String = format!("{:X}", byte);
         if formatted_byte.len() < 2 {
