@@ -1,26 +1,27 @@
-use uuid::Uuid;
 use wasm_bindgen::prelude::*;
-
+use rand::random;
 #[wasm_bindgen]
 pub fn generate_random_guid() -> String {
-    let my_uuid: Uuid = Uuid::new_v4();
-    let array_bytes = my_uuid.as_bytes();
-    let mut rand_id: String = String::new();
-    rand_id.push_str("0x");
-    for byte in array_bytes {
-        let formatted_byte: String = format!("{:X}", byte);
-        if formatted_byte.len() == 1 {
-            let mut formatted_byte_with_additionnal_zero: String = "0".to_string();
-            formatted_byte_with_additionnal_zero.push_str(&formatted_byte);
-            rand_id.push_str(&formatted_byte_with_additionnal_zero);
-        } else {
-            rand_id.push_str(&formatted_byte);
-        }
-        if rand_id.len() == 18 {
-            break;
-        }
+    let random: [u8; 8] = rand::random();
+
+    let mut str_bytes = vec![0u8; 16];
+
+    const ASCII_ZERO: u8 = '0' as u8;
+    const ASCII_NINE: u8 = '9' as u8;
+    const ASCII_NUMBERS_LETTERS_OFFSET: u8 = 'A' as u8 - '9' as u8 - 1;
+
+    for i in 0..8 {
+        let mut leading = random[i] / 16 + ASCII_ZERO;
+        let mut trailing = random[i] % 16 + ASCII_ZERO;
+
+        leading += ((leading > ASCII_NINE) as u8) * ASCII_NUMBERS_LETTERS_OFFSET;
+        trailing += ((trailing > ASCII_NINE) as u8) * ASCII_NUMBERS_LETTERS_OFFSET;
+
+        str_bytes[2 * i] = leading;
+        str_bytes[2 * i + 1] = trailing;
     }
-    return rand_id;
+
+    unsafe { String::from_utf8_unchecked(str_bytes) }
 }
 
 #[cfg(test)]
