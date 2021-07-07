@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use rand::random;
 #[wasm_bindgen]
 pub fn generate_random_guid() -> String {
-    let random: [u8; 8] = rand::random();
+    let random: [u8; 8] = random();
 
     let mut str_bytes = vec![0u8; 16];
 
