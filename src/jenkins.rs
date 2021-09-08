@@ -1,4 +1,6 @@
+use wasm_bindgen::prelude::*;
 // https://en.wikipedia.org/wiki/Jenkins_hash_function#one_at_a_time
+#[wasm_bindgen]
 pub fn joaat(string: &str) -> u32{
     let mut hash:u32 = 0;
     for &i in string.as_bytes() {

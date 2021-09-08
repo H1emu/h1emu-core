@@ -1,6 +1,6 @@
 [package]
 name = "h1emu-core"
-version = "0.2.1"
+version = "0.3.1"
 edition = "2018"
 [dependencies]
 wasm-bindgen = "0.2.45"
