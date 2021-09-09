@@ -19,7 +19,6 @@ mod tests {
     use super::*;
     #[test]
     fn jenkins_oaat_test() {
-        println!( "{:?}" , joaat("HAX") );
         assert_eq!(joaat("HAX"), 2813495259)
     }
 }

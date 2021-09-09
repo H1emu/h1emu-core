@@ -29,7 +29,6 @@ mod tests {
     use super::*;
     #[test]
     fn generate_random_guid_test() {
-        println!( "{:?}" , generate_random_guid() );
         assert_ne!(generate_random_guid(), generate_random_guid())
     }
 }
