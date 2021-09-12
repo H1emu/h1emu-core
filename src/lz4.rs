@@ -16,11 +16,11 @@ mod tests {
     use super::*;
     #[test]
     fn lz4_decomp_test() {
-        assert_eq!(lz4_decomp(&[0x11, b'a', 1, 0, 0]), b"aaaaaa")
+        assert_eq!(lz4_decomp(&[0x11, 2, 1, 0, 0]), [2, 2, 2, 2, 2, 2])
     }
     #[test]
     fn lz4_comp_test() {
-        assert_eq!(lz4_comp(b"aaaaaa"), &[0x11, b'a', 1, 0, 0])
+        assert_eq!(lz4_comp(&[2, 2, 2, 2, 2, 2]), &[0x11, 2, 1, 0, 0])
     }
 }
 
