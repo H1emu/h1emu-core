@@ -1,11 +1,12 @@
 [package]
 name = "h1emu-core"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2018"
 [dependencies]
 wasm-bindgen = "0.2.45"
 rand = { version = "0.6.5", features = ["wasm-bindgen"] }
 lz4-compression = "*"
+byteorder = "1.4.3"
 [lib]
 crate-type = ["cdylib"]
 [profile.release]
