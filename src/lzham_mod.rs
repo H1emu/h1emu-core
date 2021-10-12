@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn lzham_comp_decomp_test() {
         let hello_world_compressed_bytes = [128, 0, 2, 130, 128, 104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 192, 26, 11, 4, 93];
-        let hello_world_uncompressed_bytes = [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 148, 80, 127, 0, 0, 0, 0, 0, 0, 0];
+        let hello_world_uncompressed_bytes = [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 8, 25, 127, 0, 0, 0, 0, 0, 0, 0];
         assert_eq!(lzham_decomp(&hello_world_compressed_bytes), hello_world_uncompressed_bytes)
     }
     #[test]
