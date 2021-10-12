@@ -17,6 +17,7 @@ pub fn lzham_comp(data: &[u8]) -> Vec<u8>{
   return comp;
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -33,3 +34,4 @@ mod tests {
     }
 }
 
+*/
