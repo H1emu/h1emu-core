@@ -22,11 +22,13 @@ mod tests {
     use super::*;
     #[test]
     fn lzham_comp_decomp_test() {
-        assert_eq!(lzham_decomp(&[0x11, 2, 1, 0, 0]), "hello world".as_bytes())
+        let hello_world_compressed_bytes = [128, 0, 2, 130, 128, 104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 192, 26, 11, 4, 93];
+        assert_eq!(lzham_decomp(&hello_world_compressed_bytes), "hello world".as_bytes())
     }
     #[test]
     fn lzham_comp_test() {
-        assert_eq!(lzham_comp("hello world".as_bytes()), &[0x11, 2, 1, 0, 0])
+      let hello_world_compressed_bytes = [128, 0, 2, 130, 128, 104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 192, 26, 11, 4, 93];
+        assert_eq!(lzham_comp("hello world".as_bytes()), &hello_world_compressed_bytes)
     }
 }
 
