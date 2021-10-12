@@ -22,11 +22,11 @@ mod tests {
     use super::*;
     #[test]
     fn lzham_comp_decomp_test() {
-        assert_eq!(lzham_decomp(&[0x11, 2, 1, 0, 0]), [2, 2, 2, 2, 2, 2])
+        assert_eq!(lzham_decomp(&[0x11, 2, 1, 0, 0]), "hello world".as_bytes())
     }
     #[test]
-    fn lzham_comp_comp_test() {
-        assert_eq!(lzham_comp(&[2, 2, 2, 2, 2, 2]), &[0x11, 2, 1, 0, 0])
+    fn lzham_comp_test() {
+        assert_eq!(lzham_comp("hello world".as_bytes()), &[0x11, 2, 1, 0, 0])
     }
 }
 
