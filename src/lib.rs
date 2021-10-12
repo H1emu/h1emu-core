@@ -1,10 +1,10 @@
 mod utils;
 mod jenkins;
 mod crc;
-mod lz4;
+mod lzham_mod;
 mod soeprotocol;
 pub use soeprotocol::*;
 pub use utils::*;
 pub use jenkins::*;
 pub use crc::*;
-pub use lz4::*;
+pub use lzham_mod::*;
