@@ -9,6 +9,13 @@ getrandom = { version = "0.2.3", features = ["js"] }
 rand = "0.8.4"
 byteorder = "1.4.3"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "lib-bench"
+harness = false
+
 [lib]
 crate-type = ["cdylib"]
 

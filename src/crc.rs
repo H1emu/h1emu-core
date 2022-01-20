@@ -18,7 +18,6 @@ pub fn append_crc(data: &[u8], crc_seed: usize) -> std::vec::Vec<u8>{
 pub fn crc32(data: &[u8], crc_seed: usize) -> u32{
   let crc32_table = get_crc_table();
   let mut crc = crc32_table[!crc_seed & 0xff];
-  println!("{}",crc);
   crc ^= 0x00ffffff;
   let mut index = (crc_seed >> 8)  ^ crc as usize;
   crc = (crc >> 8) & 0x00ffffff;
