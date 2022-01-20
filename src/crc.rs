@@ -8,9 +8,7 @@ use byteorder::{BigEndian,WriteBytesExt};
 pub fn append_crc(data: &[u8], crc_seed: usize) -> std::vec::Vec<u8>{
   let mut data_mut = data.to_vec();
   let crc = crc32(&data_mut, crc_seed >> 0);
-  let mut crc_buffer =  vec![];
-  crc_buffer.write_u16::<BigEndian>((crc & 0xffff) as u16).unwrap();
-  data_mut.extend(crc_buffer);
+  data_mut.write_u16::<BigEndian>((crc & 0xffff) as u16).unwrap();
   return data_mut;
 }
 
