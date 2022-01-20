@@ -1,8 +1,8 @@
 use wasm_bindgen::prelude::*;
 // https://en.wikipedia.org/wiki/Jenkins_hash_function#one_at_a_time
 #[wasm_bindgen]
-pub fn joaat(string: &str) -> u32{
-    let mut hash:u32 = 0;
+pub fn joaat(string: &str) -> u32 {
+    let mut hash: u32 = 0;
     for &i in string.as_bytes() {
         hash += i as u32;
         hash += hash << 10;
@@ -22,4 +22,3 @@ mod tests {
         assert_eq!(joaat("HAX"), 2813495259)
     }
 }
-

@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use rand::random;
+use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn generate_random_guid() -> String {
     let random: [u8; 8] = random();
