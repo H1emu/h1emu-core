@@ -5,6 +5,7 @@ edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"
 repository = "https://github.com/H1emu/H1emu-core"
+readme="README.md"
 
 [dependencies]
 wasm-bindgen = "0.2.78"
