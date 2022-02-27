@@ -31,10 +31,10 @@ impl RC4 {
     }
 
     #[wasm_bindgen]
-    pub fn encrypt(&mut self, data: Vec<u32>, data_size: u32) -> Vec<u32> {
+    pub fn encrypt(&mut self, data: Vec<u32>) -> Vec<u32> {
 
         let mut new_data:Vec<u32> = data;
-        for k in 0..data_size {
+        for k in 0..new_data.len() {
             self.i = (self.i + 1)%256;
             self.j = (self.j + self.s[self.i as usize])%256;
 
@@ -63,8 +63,8 @@ impl RC4 {
     }
     
     #[wasm_bindgen]
-    pub fn decrypt(&mut self, data: Vec<u32>, data_size: u32) -> Vec<u32> {
-        return self.encrypt(data, data_size);
+    pub fn decrypt(&mut self, data: Vec<u32>) -> Vec<u32> {
+        return self.encrypt(data);
     }
 
 }
@@ -94,7 +94,7 @@ mod tests {
          ];
         let data: [u32; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
         let mut rc4_obj = RC4::initialize(key.to_vec());
-        let data_result = rc4_obj.encrypt(data.to_vec(), 34);
+        let data_result = rc4_obj.encrypt(data.to_vec());
         assert_eq!(
             data_result,
             [
