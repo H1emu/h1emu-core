@@ -18,9 +18,9 @@ impl RC4 {
         }
 
         let mut l:u32 = 0;
-        for k in 0..256 {
+        for k in 0..=255 {
 
-            l = (given_key.get( (k as u8).rem_euclid(key_size) as usize).unwrap() + rc4.s.get(k as usize).unwrap() + l)%256;
+            l = (given_key[(k % key_size) as usize] + rc4.s[k as usize] + l)%256;
             let saved = rc4.s[ k as usize];
 
             rc4.s[ k as usize] = rc4.s[ l as usize];
