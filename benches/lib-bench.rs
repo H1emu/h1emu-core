@@ -14,6 +14,20 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("crc32", |b| b.iter(|| crc32(black_box(&data), black_box(0))));
     drop(data);
     c.bench_function("joaat", |b| b.iter(|| joaat(black_box("HAX"))));
+    let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+    c.bench_function("RC4::initialize", |b| b.iter(|| RC4::initialize(black_box(key.to_vec()))));
+    let key: [u8; 16] = [
+        23, 189,   8, 107, 27, 148,
+       240,  47, 240, 236, 83, 215,
+        99,  88, 155,  95
+     ];
+    let data: [u32; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
+    let mut rc4_obj = RC4::initialize(key.to_vec());
+    c.bench_function("RC4::encrypt", |b| b.iter(|| rc4_obj.encrypt(black_box(data.to_vec()))));
     
 }
 
