@@ -47,13 +47,6 @@ impl RC4 {
             self.s[ self.i as usize] = self.s[ self.j as usize];
 
             self.s[ self.j as usize] = saved;
-            println!("k {}",k);
-            //println!("i {} , j {}",i,j);
-            //println!("i+j {} ",self.s[(self.s[i as usize] + self.s[j as usize]) as usize %256]);
-            println!("{}",self.s[(self.s[self.i as usize] + self.s[self.j as usize]) as usize %256]);
-            println!("XOR");
-            println!("msg {:?}",new_data);
-            println!("{}",new_data[k as usize] ^ self.s[(self.s[self.i as usize] + self.s[self.j as usize]) as usize %256]);
 
             new_data[k as usize] = new_data[k as usize] ^ self.s[(self.s[self.i as usize] + self.s[self.j as usize]) as usize %256];
 
