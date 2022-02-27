@@ -102,7 +102,7 @@ mod tests {
             99,  88, 155,  95
          ];
         let data: [u32; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
-        let rc4_obj = RC4::Initialize(key.to_vec(), key.len() as u8);
+        let mut rc4_obj = RC4::Initialize(key.to_vec(), key.len() as u8);
         let data_result = rc4_obj.Encrypt(data.to_vec(), 34);
         assert_eq!(
             data_result,
