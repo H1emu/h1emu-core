@@ -14,6 +14,8 @@ rand = "0.8.5"
 byteorder = "1.4.3"
 wee_alloc = "0.4.5"
 serde_json = {version = "1.0.79" , features = ["preserve_order"]}
+serde = { version = "1.0.136", features = ["derive"] }
+
 
 [dev-dependencies]
 criterion = "0.3.5"

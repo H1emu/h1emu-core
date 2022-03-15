@@ -14,8 +14,20 @@ pub struct Soeprotocol {
 
 #[wasm_bindgen]
 impl Soeprotocol {
-  pub fn pack(){
-
+  pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u32, _use_compression: bool, rc4: RC4) -> Vec<u8>{
+        match packet_name.as_str() {
+            "SessionRequest" => return pack_session_request(packet),
+            "SessionReply" => return pack_session_reply(packet),
+            "Disconnect" => return vec![0,5],
+            "Ping" => return vec![0,6],
+          //  "NetStatusRequest" => return pack_data(packet),
+         //   "NetStatusReply" => return pack_data(packet),
+            "Data" => return pack_data(packet),
+            "DataFragment" => return pack_data(packet),
+            "OutOfOrder" => return pack_OutOfOrder(packet),
+            "Ack" => return pack_ack(packet),
+            _ => return vec![]
+        }
     }
 
  pub fn parse(&mut self,data: Vec<u8>, rc4: RC4) -> String{
