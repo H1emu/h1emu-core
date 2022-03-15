@@ -24,6 +24,18 @@ pub fn generate_random_guid() -> String {
     unsafe { String::from_utf8_unchecked(str_bytes) }
 }
 
+pub unsafe fn str_from_u8_nul_utf8_unchecked(utf8_src: &[u8]) -> &str {
+    // does Rust have a built-in 'memchr' equivalent? 
+    let mut nul_range_end = 1_usize;
+    for b in utf8_src {
+        if *b == 0 {
+            break;
+        }
+        nul_range_end += 1;
+    }
+    return ::std::str::from_utf8_unchecked(&utf8_src[0..nul_range_end]);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
