@@ -23,7 +23,7 @@ impl Soeprotocol {
           //  "NetStatusRequest" => return pack_data(packet),
          //   "NetStatusReply" => return pack_data(packet),
             "Data" => return pack_data(packet),
-            "DataFragment" => return pack_data(packet),
+            "DataFragment" => return pack_fragment_data(packet),
             "OutOfOrder" => return pack_out_of_order(packet),
             "Ack" => return pack_ack(packet),
             _ => return vec![]
@@ -92,7 +92,24 @@ mod tests {
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec(),rc4_obj);
         assert_eq!(
             data_parsed,
-            r#"{"crcLength":3,"sessionId":1008176227,"udpLength":512,"protocol":"LoginUdp_9"}"#
+            r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
+        )
+    }
+
+    #[test]
+    fn session_request_pack_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let rc4_obj = RC4::initialize(key.to_vec());
+        let mut soeprotocol_class = Soeprotocol {};
+        let data_to_pack = r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(),data_to_pack,0,false,rc4_obj);
+        assert_eq!(
+            data_pack,
+            [0,1,0,0,0,3,60,23,140,99,0,0,2,0,76,111,103,105,110,85,100,112,95,57,0]
         )
     }
 
@@ -109,7 +126,24 @@ mod tests {
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec(),rc4_obj);
         assert_eq!(
             data_parsed,
-            r#"{"sessionId":1008176227,"crcSeed":0,"crcLength":2,"compression":256,"udpLength":512}"#
+            r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"compression":256,"udp_length":512}"#
+        )
+    }
+
+    #[test]
+    fn session_reply_pack_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let rc4_obj = RC4::initialize(key.to_vec());
+        let mut soeprotocol_class = Soeprotocol {};
+        let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"compression":256,"udp_length":512}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(),data_to_pack,0,false,rc4_obj);
+        assert_eq!(
+            data_pack,
+            [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
         )
     }
 

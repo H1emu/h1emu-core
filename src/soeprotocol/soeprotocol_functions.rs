@@ -2,44 +2,53 @@
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
 use serde_json::*;
+use crate::utils::{str_from_u8_nul_utf8_unchecked,u8_from_str_nul_utf8_unchecked};
 use serde::{Serialize,Deserialize};
 use crate::rc4::RC4;
 
 pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
-    return json!({
-        "crcLength": rdr.read_u32::<BigEndian>().unwrap(),
-        "sessionId": rdr.read_u32::<BigEndian>().unwrap(),
-        "udpLength": rdr.read_u32::<BigEndian>().unwrap(),
-        "protocol": "LoginUdp_9", // TODO
-    }).to_string()
+    let crc_length = rdr.read_u32::<BigEndian>().unwrap();
+    let session_id = rdr.read_u32::<BigEndian>().unwrap();
+    let udp_length = rdr.read_u32::<BigEndian>().unwrap();
+    let protocol_data_position = rdr.position() as usize;
+    let raw_data = rdr.into_inner();
+    unsafe {
+        let protocol = str_from_u8_nul_utf8_unchecked(&raw_data[protocol_data_position..]);
+        return json!({
+            "crc_length": crc_length,
+            "session_id": session_id,
+            "udp_length": udp_length,
+            "protocol": protocol, 
+        }).to_string()
+    }   
 }
 
 #[derive(Serialize, Deserialize)]
 struct SessionRequestPacket {
     session_id: u32,
-    crc_seed: u32,
-    udp_length: u32
+    crc_length: u32,
+    udp_length: u32,
+    protocol: String
 }
 
 pub fn pack_session_request(packet: String) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: SessionRequestPacket = serde_json::from_str(&packet).unwrap();
-
     wtr.write_u16::<BigEndian>(0x01).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.crc_length).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.crc_seed).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
-  // protocol
+    wtr.append(& mut u8_from_str_nul_utf8_unchecked(packet_json.protocol.as_str()));
     return wtr;
 }
 
 pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     return json!({
-        "sessionId": rdr.read_u32::<BigEndian>().unwrap(),
-        "crcSeed": rdr.read_u32::<BigEndian>().unwrap(),
-        "crcLength": rdr.read_u8().unwrap(),
+        "session_id": rdr.read_u32::<BigEndian>().unwrap(),
+        "crc_seed": rdr.read_u32::<BigEndian>().unwrap(),
+        "crc_length": rdr.read_u8().unwrap(),
         "compression": rdr.read_u16::<BigEndian>().unwrap(),
-        "udpLength": rdr.read_u32::<BigEndian>().unwrap(),
+        "udp_length": rdr.read_u32::<BigEndian>().unwrap(),
     }).to_string()
 }
 
@@ -93,6 +102,25 @@ pub fn pack_data(packet: String) -> Vec<u8>{
     let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x09).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
+
+    //write data
+
+    // append crc
+    return wtr;
+}
+
+#[derive(Serialize, Deserialize)]
+struct DataFragmentPacket {
+    data: Vec<u8>,
+    sequence: u16,
+}
+
+pub fn pack_fragment_data(packet: String) -> Vec<u8>{
+    let mut wtr = vec![];
+    let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+
+    wtr.write_u16::<BigEndian>(0x0d).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
 
     //write data
