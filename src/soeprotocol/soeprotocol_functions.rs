@@ -81,8 +81,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
     rdr.set_position(data_end);
     let crc = rdr.read_u16::<BigEndian>().unwrap();
     let vec = rdr.into_inner();
-    let data = &vec[4..data_end as usize];
-    println!("{:?}",data);
+    let data = &vec[4..data_end as usize]; // for now since it's only mean to be used in h1emu, the data isn't deciphered but will at some point.
     return json!({
         "channel": 0,
         "sequence": sequence,
@@ -93,17 +92,18 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
 
 #[derive(Serialize, Deserialize)]
 struct DataPacket {
-    data: Vec<u8>,
+    data: Vec<u32>,
     sequence: u16,
 }
 
-pub fn pack_data(packet: String) -> Vec<u8>{
+pub fn pack_data(packet: String,crc_seed: u32, _use_compression: bool, mut rc4: RC4) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x09).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-
+   // wtr.append()
+    rc4.encrypt(packet_json.data);
     //write data
 
     // append crc
@@ -116,7 +116,7 @@ struct DataFragmentPacket {
     sequence: u16,
 }
 
-pub fn pack_fragment_data(packet: String) -> Vec<u8>{
+pub fn pack_fragment_data(packet: String,crc_seed: u32, _use_compression: bool, rc4: RC4) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 

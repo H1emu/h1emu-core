@@ -22,8 +22,8 @@ impl Soeprotocol {
             "Ping" => return vec![0,6],
           //  "NetStatusRequest" => return pack_data(packet),
          //   "NetStatusReply" => return pack_data(packet),
-            "Data" => return pack_data(packet),
-            "DataFragment" => return pack_fragment_data(packet),
+            "Data" => return pack_data(packet,crc_seed, _use_compression, rc4),
+            "DataFragment" => return pack_fragment_data(packet,crc_seed, _use_compression, rc4),
             "OutOfOrder" => return pack_out_of_order(packet),
             "Ack" => return pack_ack(packet),
             _ => return vec![]
