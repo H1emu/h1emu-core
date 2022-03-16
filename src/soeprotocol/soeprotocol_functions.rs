@@ -115,7 +115,7 @@ struct OutOfOrderPacket {
     sequence: u16,
 }
 
-pub fn pack_OutOfOrder(packet: String) -> Vec<u8>{
+pub fn pack_out_of_order(packet: String) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 

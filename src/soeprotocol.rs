@@ -24,7 +24,7 @@ impl Soeprotocol {
          //   "NetStatusReply" => return pack_data(packet),
             "Data" => return pack_data(packet),
             "DataFragment" => return pack_data(packet),
-            "OutOfOrder" => return pack_OutOfOrder(packet),
+            "OutOfOrder" => return pack_out_of_order(packet),
             "Ack" => return pack_ack(packet),
             _ => return vec![]
         }
