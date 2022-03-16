@@ -92,7 +92,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
 
 #[derive(Serialize, Deserialize)]
 struct DataPacket {
-    data: Vec<u32>,
+    data: Vec<u8>,
     sequence: u16,
 }
 
