@@ -2,9 +2,9 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct RC4 {
-    s: Vec<u32>,
-    i: u32,
-    j: u32,
+    s: Vec<u8>,
+    i: u16,// need u16 to avoid overflow
+    j: u16,// need u16 to avoid overflow
 }
 
 #[wasm_bindgen]
@@ -14,13 +14,13 @@ impl RC4 {
         let mut rc4 = RC4 { s: vec![0; 256], i: 0 , j :0};
 
         for k in 0..256 {
-            rc4.s[k] = k as u32;
+            rc4.s[k] = k as u8;
         }
 
-        let mut l:u32 = 0;
+        let mut l:u16 = 0;
         for k in 0..=255 {
 
-            l = (l + (given_key[(k % given_key.len()) as usize] as u32) + rc4.s[k as usize])%256;
+            l = (l + (given_key[(k % given_key.len()) as usize]) as u16 + rc4.s[k as usize] as u16)%256;
             let saved = rc4.s[ k as usize];
 
             rc4.s[ k as usize] = rc4.s[ l as usize];
@@ -31,24 +31,21 @@ impl RC4 {
     }
 
     #[wasm_bindgen]
-    pub fn encrypt(&mut self, data: Vec<u32>) -> Vec<u32> {
+    pub fn encrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
 
-        let mut new_data:Vec<u32> = data;
+        let mut new_data:Vec<u8> = data;
         for k in 0..new_data.len() {
             self.i = (self.i + 1)%256;
-            self.j = (self.j + self.s[self.i as usize])%256;
-
-                
-            // swap
-           // mem::swap(& mut self.sbox[i as usize], & mut self.sbox[j as usize]);
+            self.j = (self.j + self.s[self.i as usize] as u16)%256;
 
             let saved = self.s[ self.i as usize];
 
             self.s[ self.i as usize] = self.s[ self.j as usize];
 
             self.s[ self.j as usize] = saved;
-
-            new_data[k as usize] = new_data[k as usize] ^ self.s[(self.s[self.i as usize] + self.s[self.j as usize]) as usize %256];
+            let si = self.s[self.i as usize] as u16; // need u16 to avoid overflow
+            let sj = self.s[self.j as usize] as u16; // need u16 to avoid overflow
+            new_data[k as usize] = new_data[k as usize] ^ self.s[(si + sj) as usize %256];
 
         }
 
@@ -56,7 +53,7 @@ impl RC4 {
     }
     
     #[wasm_bindgen]
-    pub fn decrypt(&mut self, data: Vec<u32>) -> Vec<u32> {
+    pub fn decrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
         return self.encrypt(data);
     }
 
@@ -85,7 +82,7 @@ mod tests {
            240,  47, 240, 236, 83, 215,
             99,  88, 155,  95
          ];
-        let data: [u32; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
+        let data: [u8; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
         let mut rc4_obj = RC4::initialize(key.to_vec());
         let data_result = rc4_obj.encrypt(data.to_vec());
         assert_eq!(

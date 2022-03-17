@@ -25,7 +25,7 @@ fn criterion_benchmark(c: &mut Criterion) {
        240,  47, 240, 236, 83, 215,
         99,  88, 155,  95
      ];
-    let data: [u32; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
+    let data: [u8; 34] = [5,1,0,0,0,0,0,0,0,21,0,0,0,2,1,0,0,0,3,0,0,0,1,0,0,0,4,0,0,0,116,101,115,116];
     let mut rc4_obj = RC4::initialize(key.to_vec());
     c.bench_function("RC4::encrypt", |b| b.iter(|| rc4_obj.encrypt(black_box(data.to_vec()))));
     
