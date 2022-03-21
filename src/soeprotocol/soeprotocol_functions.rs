@@ -155,3 +155,29 @@ pub fn pack_ack(packet: String) -> Vec<u8>{
     return wtr;
 }
 
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn write_packet_data_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let mut rc4_obj = RC4::initialize(key.to_vec());
+        let data_to_pack:Vec<u8> = [2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0].to_vec();
+        let mut wtr = vec![];
+        let data_packet = DataPacket {
+            data: data_to_pack,
+            sequence: 0,
+        };
+       write_packet_data(&mut wtr, data_packet,0,false, &mut rc4_obj);
+        assert_eq!(
+            wtr,
+            [0,0,169,183,185,67,241,64,164,5,143,19,35,87,21,163,205,26,83,24,212, 12, 197].to_vec()
+        )
+    }
+}
