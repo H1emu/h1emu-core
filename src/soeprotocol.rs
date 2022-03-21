@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 use serde_json::*;
