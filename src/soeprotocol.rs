@@ -14,7 +14,7 @@ pub struct Soeprotocol {
 
 #[wasm_bindgen]
 impl Soeprotocol {
-  pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u32, _use_compression: bool, rc4: RC4) -> Vec<u8>{
+  pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u32, _use_compression: bool, rc4: &mut RC4) -> Vec<u8>{
         match packet_name.as_str() {
             "SessionRequest" => return pack_session_request(packet),
             "SessionReply" => return pack_session_reply(packet),
@@ -83,10 +83,10 @@ mod tests {
            240,  47, 240, 236, 83, 215,
             99,  88, 155,  95
          ];
-        let rc4_obj = RC4::initialize(key.to_vec());
+        let mut rc4_obj = RC4::initialize(key.to_vec());
         let mut soeprotocol_class = Soeprotocol {};
         let data_to_pack = r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(),data_to_pack,0,false,rc4_obj);
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(),data_to_pack,0,false,&mut rc4_obj);
         assert_eq!(
             data_pack,
             [0,1,0,0,0,3,60,23,140,99,0,0,2,0,76,111,103,105,110,85,100,112,95,57,0]
@@ -117,10 +117,10 @@ mod tests {
            240,  47, 240, 236, 83, 215,
             99,  88, 155,  95
          ];
-        let rc4_obj = RC4::initialize(key.to_vec());
+        let mut rc4_obj = RC4::initialize(key.to_vec());
         let mut soeprotocol_class = Soeprotocol {};
         let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"compression":256,"udp_length":512}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(),data_to_pack,0,false,rc4_obj);
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(),data_to_pack,0,false,&mut rc4_obj);
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
