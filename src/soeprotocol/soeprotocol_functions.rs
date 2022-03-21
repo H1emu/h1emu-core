@@ -4,6 +4,7 @@ use std::io::Cursor;
 use serde_json::*;
 use crate::utils::{str_from_u8_nul_utf8_unchecked,u8_from_str_nul_utf8_unchecked};
 use serde::{Serialize,Deserialize};
+use crate::crc::append_crc;
 use crate::rc4::RC4;
 
 pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
@@ -102,11 +103,10 @@ pub fn pack_data(packet: String,crc_seed: u32, _use_compression: bool, mut rc4: 
 
     wtr.write_u16::<BigEndian>(0x09).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-   // wtr.append()
-    rc4.encrypt(packet_json.data);
-    //write data
+    wtr.append(&mut rc4.encrypt(packet_json.data));
 
-    // append crc
+    append_crc(&mut wtr, crc_seed as usize);
+
     return wtr;
 }
 
