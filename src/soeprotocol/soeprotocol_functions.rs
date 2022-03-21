@@ -131,32 +131,27 @@ pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
 
 
 #[derive(Serialize, Deserialize)]
-struct OutOfOrderPacket {
+struct AckPacket {
     sequence: u16,
 }
 
 pub fn pack_out_of_order(packet: String) -> Vec<u8>{
     let mut wtr = vec![];
-    let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x11).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-    // append crc
     return wtr;
 }
 
-#[derive(Serialize, Deserialize)]
-struct AckPacket {
-    sequence: u16,
-}
+
 
 pub fn pack_ack(packet: String) -> Vec<u8>{
     let mut wtr = vec![];
-    let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x15).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-    // append crc
     return wtr;
 }
 
