@@ -146,6 +146,23 @@ mod tests {
     }
 
     #[test]
+    fn data_pack_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let mut rc4_obj = RC4::initialize(key.to_vec());
+        let mut soeprotocol_class = Soeprotocol {};
+        let data_to_pack =  r#"{"sequence":0,"data":[2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(),data_to_pack,0,false,&mut rc4_obj);
+        assert_eq!(
+            data_pack,
+            [0,9,0,0,169,183,185,67,241,64,164,5,143,19,35,87,21,163,205,26,83,24,212,18,57]
+        )
+    }
+
+    #[test]
     fn data_fragment_parse_test() {
         let key: [u8; 16] = [
             23, 189,   8, 107, 27, 148,
