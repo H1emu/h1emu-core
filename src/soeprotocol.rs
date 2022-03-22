@@ -14,6 +14,10 @@ pub struct Soeprotocol {
 
 #[wasm_bindgen]
 impl Soeprotocol {
+  #[wasm_bindgen(constructor)]
+  pub fn initialize() -> Soeprotocol { 
+        return Soeprotocol {};
+  }
   pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u32, _use_compression: bool, rc4: &mut RC4) -> Vec<u8>{
         match packet_name.as_str() {
             "SessionRequest" => return pack_session_request(packet),
