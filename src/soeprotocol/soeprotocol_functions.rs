@@ -16,6 +16,7 @@ pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     unsafe {
         let protocol = str_from_u8_nul_utf8_unchecked(&raw_data[protocol_data_position..]);
         return json!({
+            "name": "SessionRequest",
             "crc_length": crc_length,
             "session_id": session_id,
             "udp_length": udp_length,
@@ -45,6 +46,7 @@ pub fn pack_session_request(packet: String) -> Vec<u8>{
 
 pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     return json!({
+        "name": "SessionReply",
         "session_id": rdr.read_u32::<BigEndian>().unwrap(),
         "crc_seed": rdr.read_u32::<BigEndian>().unwrap(),
         "crc_length": rdr.read_u8().unwrap(),
@@ -76,7 +78,12 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
-pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: &mut RC4) -> String{
+pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: &mut RC4,opcode : u16) -> String{
+    let name = if opcode == 0x09 {
+        "Data"
+    } else {
+        "DataFragment"
+    };
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
     let data_end = (rdr.get_ref().len() as u64) - 2 as u64;
     rdr.set_position(data_end);
@@ -84,6 +91,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: &mut RC4) -> String
     let vec = rdr.into_inner();
     let data = &vec[4..data_end as usize]; // for now since it's only mean to be used in h1emu, the data isn't deciphered but will at some point.
     return json!({
+        "name": name,
         "channel": 0,
         "sequence": sequence,
         "crc": crc,
@@ -121,9 +129,15 @@ fn write_packet_data(wtr : &mut Vec<u8>,data_packet : DataPacket,crc_seed: u32, 
     append_crc(wtr, crc_seed as usize);
 }
 
-pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
+pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>,opcode : u16) -> String{
+    let name = if opcode == 0x15 {
+        "Ack"
+    } else {
+        "OutOfOrder"
+    };
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
     return json!({
+        "name": name,
         "channel": 0,
         "sequence": sequence,
       }).to_string()
