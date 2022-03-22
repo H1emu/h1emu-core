@@ -114,12 +114,12 @@ pub fn pack_data(packet: String,crc_seed: u32, _use_compression: bool, mut rc4: 
     return wtr;
 }
 
-pub fn pack_fragment_data(packet: String,crc_seed: u32, _use_compression: bool, rc4: &mut RC4) -> Vec<u8>{
+pub fn pack_fragment_data(packet: String,crc_seed: u32, _use_compression: bool,mut rc4: &mut RC4) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x0d).unwrap();
-    write_packet_data(&mut wtr, packet_json, crc_seed, _use_compression, rc4);
+    write_packet_data(&mut wtr, packet_json, crc_seed, _use_compression, &mut rc4);
     return wtr;
 }
 
