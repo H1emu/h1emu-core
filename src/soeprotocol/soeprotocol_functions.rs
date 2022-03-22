@@ -55,6 +55,39 @@ pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     }).to_string()
 }
 
+
+fn disconnect_reason_to_string(reason_id: u16) -> String {
+    match reason_id {
+        0 => "DisconnectReasonIcmpError".to_string(),
+        1 => "DisconnectReasonTimeout".to_string(),
+        2 => "DisconnectReasonNone".to_string(),
+        3 => "DisconnectReasonOtherSideTerminated".to_string(),
+        4 => "DisconnectReasonManagerDeleted".to_string(),
+        5 => "DisconnectReasonConnectFail".to_string(),
+        6 => "DisconnectReasonApplication".to_string(),
+        7 => "DisconnectReasonUnreachableConnection".to_string(),
+        8 => "DisconnectReasonUnacknowledgedTimeout".to_string(),
+        9 => "DisconnectReasonNewConnectionAttempt".to_string(),
+        10 => "DisconnectReasonConnectionRefused".to_string(),
+        11 => "DisconnectReasonConnectErro".to_string(),
+        12 => "DisconnectReasonConnectingToSelf".to_string(),
+        13 => "DisconnectReasonReliableOverflow".to_string(),
+        14 => "DisconnectReasonApplicationReleased".to_string(),
+        15 => "DisconnectReasonCorruptPacket".to_string(),
+        16 => "DisconnectReasonProtocolMismatch".to_string(),
+        _ => "unknown".to_string()
+    }
+}
+
+pub fn parse_disconnect(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
+    return json!({
+        "name": "Disconnect",
+        "session_id": rdr.read_u32::<BigEndian>().unwrap(),
+        "reason": disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap()),
+        "unk": rdr.read_u16::<BigEndian>().unwrap(),
+    }).to_string()
+}
+
 #[derive(Serialize, Deserialize)]
 struct SessionReplyPacket {
     session_id: u32,
@@ -78,7 +111,7 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
-pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>,use_crc: bool ,_rc4: &mut RC4,opcode : u16) -> String{
+pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>,use_crc: bool ,mut _rc4: &mut RC4,opcode : u16) -> String{
     let name = if opcode == 0x09 {
         "Data"
     } else {

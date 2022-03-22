@@ -54,7 +54,7 @@ impl Soeprotocol {
             0x01 =>  parse_session_request(rdr),
             0x02 =>  parse_session_reply(rdr),
            // 0x03 => TODO,
-            0x05 =>  json!({"name":"Disconnect"}).to_string(),
+            0x05 =>  parse_disconnect(rdr),
             0x06 =>  json!({"name":"Ping"}).to_string(),
            // 0x07 =>  json!({}),
            // 0x08 =>  json!({}),
