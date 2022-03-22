@@ -107,26 +107,26 @@ struct DataPacket {
 
 pub fn pack_data(packet: String,crc_seed: u8, use_crc: bool, mut rc4: &mut RC4, use_encryption: bool) -> Vec<u8>{
     let mut wtr = vec![];
-    let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x09).unwrap();
-    write_packet_data(&mut wtr, packet_json, crc_seed, use_crc, &mut rc4, use_encryption);
+    write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc, &mut rc4, use_encryption);
     return wtr;
 }
 
 pub fn pack_fragment_data(packet: String,crc_seed: u8, use_crc: bool,mut rc4: &mut RC4, use_encryption: bool) -> Vec<u8>{
     let mut wtr = vec![];
-    let packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x0d).unwrap();
-    write_packet_data(&mut wtr, packet_json, crc_seed, use_crc, &mut rc4, use_encryption);
+    write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc, &mut rc4, use_encryption);
     return wtr;
 }
 
-fn write_packet_data(wtr : &mut Vec<u8>,data_packet : DataPacket,crc_seed: u8, use_crc: bool, rc4:&mut RC4, use_encryption: bool) -> (){
+fn write_packet_data(wtr : &mut Vec<u8>,data_packet : &mut DataPacket,crc_seed: u8, use_crc: bool, rc4:&mut RC4, use_encryption: bool) -> (){
     wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap();
     if use_encryption {
-        wtr.append(&mut rc4.encrypt(data_packet.data));
+        wtr.append(&mut rc4.encrypt(data_packet.data.to_owned()));
     }
     else {
         wtr.append(&mut data_packet.data);
@@ -191,11 +191,11 @@ mod tests {
         let mut rc4_obj = RC4::initialize(key.to_vec());
         let data_to_pack:Vec<u8> = [2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0].to_vec();
         let mut wtr = vec![];
-        let data_packet = DataPacket {
+        let mut data_packet = DataPacket {
             data: data_to_pack,
             sequence: 0,
         };
-       write_packet_data(&mut wtr, data_packet,0,false, &mut rc4_obj);
+       write_packet_data(&mut wtr, &mut data_packet,0,true, &mut rc4_obj,true);
         assert_eq!(
             wtr,
             [0,0,169,183,185,67,241,64,164,5,143,19,35,87,21,163,205,26,83,24,212, 12, 197].to_vec()
