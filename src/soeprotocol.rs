@@ -122,7 +122,7 @@ mod tests {
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec(),&mut rc4_obj);
         assert_eq!(
             data_parsed,
-            r#"{"name":"SessionReply","session_id":1008176227,"crc_seed":0,"crc_length":2,"compression":256,"udp_length":512}"#
+            r#"{"name":"SessionReply","session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#
         )
     }
 
@@ -135,7 +135,7 @@ mod tests {
          ];
         let mut rc4_obj = RC4::initialize(key.to_vec());
         let soeprotocol_class = Soeprotocol {use_crc:true,use_compression:false,use_encryption:true};
-        let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"compression":256,"udp_length":512}"#.to_string();
+        let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(),data_to_pack,0,&mut rc4_obj);
         assert_eq!(
             data_pack,

@@ -50,7 +50,7 @@ pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
         "session_id": rdr.read_u32::<BigEndian>().unwrap(),
         "crc_seed": rdr.read_u32::<BigEndian>().unwrap(),
         "crc_length": rdr.read_u8().unwrap(),
-        "compression": rdr.read_u16::<BigEndian>().unwrap(),
+        "encrypt_method": rdr.read_u16::<BigEndian>().unwrap(),
         "udp_length": rdr.read_u32::<BigEndian>().unwrap(),
     }).to_string()
 }
@@ -60,7 +60,7 @@ struct SessionReplyPacket {
     session_id: u32,
     crc_seed: u32,
     crc_length: u8,
-    compression: u16,
+    encrypt_method: u16,
     udp_length: u32
 }
 
@@ -72,7 +72,7 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.crc_seed).unwrap();
     wtr.write_u8(packet_json.crc_length).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.compression).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.encrypt_method).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
     wtr.write_u32::<BigEndian>(3).unwrap();
     return wtr;
