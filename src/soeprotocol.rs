@@ -13,6 +13,15 @@ pub struct Soeprotocol {
     use_encryption : bool,
 }
 
+#[wasm_bindgen]
+pub enum EncryptMethod {
+    EncryptMethodNone = 0x0,
+    EncryptMethodUserSupplied = 0x1,
+    EncryptMethodUserSupplied2 = 0x2,
+    EncryptMethodXorBuffer = 0x3,
+    EncryptMethodXor = 0x4,
+}
+
 
 #[wasm_bindgen]
 impl Soeprotocol {
