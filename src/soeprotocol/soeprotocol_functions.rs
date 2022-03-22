@@ -76,7 +76,7 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
-pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
+pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: &mut RC4) -> String{
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
     let data_end = (rdr.get_ref().len() as u64) - 2 as u64;
     rdr.set_position(data_end);
@@ -121,7 +121,7 @@ fn write_packet_data(wtr : &mut Vec<u8>,data_packet : DataPacket,crc_seed: u32, 
     append_crc(wtr, crc_seed as usize);
 }
 
-pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, _rc4: RC4) -> String{
+pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
     return json!({
         "channel": 0,
