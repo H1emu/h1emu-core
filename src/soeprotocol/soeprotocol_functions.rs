@@ -119,7 +119,12 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>,use_crc: bool ,mut _rc4: &
     };
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
 
-    let data_end = (rdr.get_ref().len() as u64) - 2 as u64;
+    let data_end:u64;
+    if use_crc {
+        data_end = (rdr.get_ref().len() as u64) - 2 as u64;
+    } else {
+        data_end = rdr.get_ref().len() as u64;
+    };
     let mut crc: u16 = 0;
      if  use_crc {
         rdr.set_position(data_end);
