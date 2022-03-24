@@ -178,13 +178,14 @@ fn write_packet_data(wtr : &mut Vec<u8>,data_packet : &mut DataPacket,crc_seed: 
     }
 }
 
-pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>,opcode : u16) -> String{
+pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>,opcode : u16, _use_crc:bool) -> String{
     let name = if opcode == 0x15 {
         "Ack"
     } else {
         "OutOfOrder"
     };
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
+    // read and verify crc if needed
     return json!({
         "name": name,
         "channel": 0,
@@ -198,23 +199,29 @@ struct AckPacket {
     sequence: u16,
 }
 
-pub fn pack_out_of_order(packet: String) -> Vec<u8>{
+pub fn pack_out_of_order(packet: String,crc_seed: u8,use_crc: bool) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x11).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
+    if use_crc {
+        append_crc(&mut wtr, crc_seed);
+    }
     return wtr;
 }
 
 
 
-pub fn pack_ack(packet: String) -> Vec<u8>{
+pub fn pack_ack(packet: String,crc_seed: u8,use_crc: bool) -> Vec<u8>{
     let mut wtr = vec![];
     let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
 
     wtr.write_u16::<BigEndian>(0x15).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
+    if use_crc {
+        append_crc(&mut wtr, crc_seed);
+    }
     return wtr;
 }
 

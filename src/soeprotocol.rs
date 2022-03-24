@@ -39,8 +39,8 @@ impl Soeprotocol {
          //   "NetStatusReply" => return pack_data(packet),
             "Data" => return pack_data(packet,crc_seed,self.use_crc, rc4,self.use_encryption),
             "DataFragment" => return pack_fragment_data(packet,crc_seed,self.use_crc, rc4,self.use_encryption),
-            "OutOfOrder" => return pack_out_of_order(packet),
-            "Ack" => return pack_ack(packet),
+            "OutOfOrder" => return pack_out_of_order(packet,crc_seed,self.use_crc),
+            "Ack" => return pack_ack(packet,crc_seed,self.use_crc),
             _ => return vec![]
         }
     }
@@ -60,8 +60,8 @@ impl Soeprotocol {
            // 0x08 =>  json!({}),
             0x09 =>  parse_data(rdr,self.use_crc, rc4,opcode),
             0x0d =>  parse_data(rdr,self.use_crc,rc4,opcode),
-            0x11 =>  parse_ack(rdr,opcode),
-            0x15 =>  parse_ack(rdr,opcode),
+            0x11 =>  parse_ack(rdr,opcode,self.use_crc),
+            0x15 =>  parse_ack(rdr,opcode,self.use_crc),
             _ => "".to_string()
         };
     }
