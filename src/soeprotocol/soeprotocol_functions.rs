@@ -120,7 +120,7 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
-fn write_data_length(mut wtr: &mut Vec<u8>, data_length: usize) -> () {
+fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) -> () {
     if data_length <= 0xFF {
         wtr.write_u8(data_length as u8).unwrap();
     }
