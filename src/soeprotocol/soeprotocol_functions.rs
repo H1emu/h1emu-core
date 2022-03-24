@@ -137,24 +137,33 @@ fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u64{
 fn extract_subpacket_data(rdr: &Cursor<&std::vec::Vec<u8>>,data_start_position:u64 ,sub_packet_data_length : u64) -> Vec<u8>{
     let copy_rdr = rdr.clone();
     let full_data_vec = copy_rdr.into_inner();
-    return full_data_vec[data_start_position as usize..sub_packet_data_length as usize].to_vec();
+    return full_data_vec[data_start_position as usize..(data_start_position + sub_packet_data_length) as usize].to_vec();
 }
 
-pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &Soeprotocol,rc4 :&mut RC4) -> String{
-    let mut sub_packets = vec![];
+pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &mut Soeprotocol,rc4 :&mut RC4) -> String{
+    let mut sub_packets: Vec<Value> = vec![];
     let data_end:u64 = get_data_end(&rdr,soeprotocol.use_crc);
+    let was_crc_enabled = soeprotocol.use_crc;
+    if was_crc_enabled {
+        soeprotocol.disable_crc();
+    }
     loop {
         let sub_packet_data_length = read_data_length(&mut rdr);
         let sub_packet_data = extract_subpacket_data(&rdr,rdr.position(),sub_packet_data_length);
         rdr.set_position(sub_packet_data_length + rdr.position());
+        println!("sub_packet_data_length: {}",sub_packet_data_length);
+        println!("sub_packet_data: {:?}",sub_packet_data);
         let sub_packet = soeprotocol.parse(sub_packet_data,rc4);
-        sub_packets.push(sub_packet);
-        if rdr.position() < data_end {
+        sub_packets.push(serde_json::from_str(&sub_packet).unwrap());
+        if rdr.position() == data_end {
             break;
         }
     }
+    if was_crc_enabled {
+        soeprotocol.enable_crc();
+    }
     return json!({
-        "subPackets": sub_packets,
+        "sub_packets": sub_packets,
     }).to_string()
 }
 
@@ -163,13 +172,21 @@ struct SubBasePacket {
     name: String
 }
 // pack multi packets
-pub fn pack_multi(packet:String,soeprotocol : &Soeprotocol,crc_seed : u8,rc4 :&mut RC4) -> Vec<u8>{
+pub fn pack_multi(packet:String,soeprotocol : &mut Soeprotocol,crc_seed : u8,rc4 :&mut RC4) -> Vec<u8>{
     let packets: Vec<String> = serde_json::from_str(&packet).unwrap();
     let mut wtr = vec![];
+    let was_crc_enabled = soeprotocol.use_crc;
+    if was_crc_enabled {
+        soeprotocol.disable_crc();
+    }
     for packet in packets {
         let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap();
         let mut packet_data = soeprotocol.pack(packet_json.name,packet,crc_seed,rc4);
         wtr.append(&mut packet_data);
+    }
+    if was_crc_enabled {
+        soeprotocol.enable_crc();
+        append_crc(&mut wtr, crc_seed)
     }
     return wtr;
 }
