@@ -9,7 +9,7 @@ use crate::rc4::RC4;
 #[wasm_bindgen]
 pub struct Soeprotocol {
     use_crc: bool,
-    _use_compression : bool,
+    use_compression : bool,
     use_encryption : bool,
 }
 
@@ -27,7 +27,7 @@ pub enum EncryptMethod {
 impl Soeprotocol {
   #[wasm_bindgen(constructor)]
   pub fn initialize(use_crc: bool,use_compression : bool,use_encryption : bool) -> Soeprotocol { 
-        return Soeprotocol {use_crc,_use_compression:use_compression,use_encryption};
+        return Soeprotocol {use_crc,use_compression,use_encryption};
   }
   pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u8, rc4: &mut RC4) -> Vec<u8>{
         match packet_name.as_str() {
@@ -160,6 +160,23 @@ mod tests {
         assert_eq!(
             data_parsed,
             r#"{"sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#
+        )
+    }
+
+    #[test]
+    fn multi_pack_with_crc_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let mut rc4_obj = RC4::initialize(key.to_vec());
+        let mut soeprotocol_class = Soeprotocol {use_crc:true,use_compression:false,use_encryption:false}; 
+        let data_to_pack:String = r#"{"sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(),data_to_pack,0,&mut rc4_obj);
+        assert_eq!(
+            data_pack,
+            [0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246, 10, 27]
         )
     }
 

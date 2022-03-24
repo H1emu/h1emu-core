@@ -120,24 +120,36 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
-fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u64{
+fn write_data_length(mut wtr: &mut Vec<u8>, data_length: usize) -> () {
+    if data_length <= 0xFF {
+        wtr.write_u8(data_length as u8).unwrap();
+    }
+    else if data_length <= 0xFFFF {
+        wtr.write_u16::<BigEndian>(data_length as u16).unwrap();
+    }
+    else {
+        wtr.write_u32::<BigEndian>(data_length as u32).unwrap();
+    }
+}
+
+fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u32{
     let initial_rdr_position = rdr.position();
-    let mut data_length = rdr.read_u8().unwrap() as u64;
+    let mut data_length:u32 = rdr.read_u8().unwrap() as u32;
     if data_length > 0xFF {
         rdr.set_position(initial_rdr_position);
-        data_length = rdr.read_u16::<BigEndian>().unwrap() as u64;
+        data_length = rdr.read_u16::<BigEndian>().unwrap() as u32;
         if data_length > 0xFFFF{
             rdr.set_position(initial_rdr_position);
-            data_length = rdr.read_u32::<BigEndian>().unwrap() as u64;
+            data_length = rdr.read_u32::<BigEndian>().unwrap() as u32;
         }
     }
     return data_length;
 }
 
-fn extract_subpacket_data(rdr: &Cursor<&std::vec::Vec<u8>>,data_start_position:u64 ,sub_packet_data_length : u64) -> Vec<u8>{
+fn extract_subpacket_data(rdr: &Cursor<&std::vec::Vec<u8>>,data_start_position:u64 ,sub_packet_data_length : u32) -> Vec<u8>{
     let copy_rdr = rdr.clone();
     let full_data_vec = copy_rdr.into_inner();
-    return full_data_vec[data_start_position as usize..(data_start_position + sub_packet_data_length) as usize].to_vec();
+    return full_data_vec[data_start_position as usize..(data_start_position + sub_packet_data_length as u64) as usize].to_vec();
 }
 
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &mut Soeprotocol,rc4 :&mut RC4) -> String{
@@ -150,7 +162,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &mut Soepro
     loop {
         let sub_packet_data_length = read_data_length(&mut rdr);
         let sub_packet_data = extract_subpacket_data(&rdr,rdr.position(),sub_packet_data_length);
-        rdr.set_position(sub_packet_data_length + rdr.position());
+        rdr.set_position(sub_packet_data_length as u64 + rdr.position());
         println!("sub_packet_data_length: {}",sub_packet_data_length);
         println!("sub_packet_data: {:?}",sub_packet_data);
         let sub_packet = soeprotocol.parse(sub_packet_data,rc4);
@@ -171,10 +183,18 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &mut Soepro
 struct SubBasePacket {
     name: String
 }
+
+#[derive(Serialize, Deserialize)]
+struct SubBasePackets {
+    sub_packets: Vec<Value>
+}
 // pack multi packets
 pub fn pack_multi(packet:String,soeprotocol : &mut Soeprotocol,crc_seed : u8,rc4 :&mut RC4) -> Vec<u8>{
-    let packets: Vec<String> = serde_json::from_str(&packet).unwrap();
+    let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap();
+    
+    let packets: Vec<String> = multi_packets.sub_packets.iter().map(|x| serde_json::to_string(x).unwrap()).collect();
     let mut wtr = vec![];
+    wtr.write_u16::<BigEndian>(0x03).unwrap();
     let was_crc_enabled = soeprotocol.use_crc;
     if was_crc_enabled {
         soeprotocol.disable_crc();
@@ -182,6 +202,7 @@ pub fn pack_multi(packet:String,soeprotocol : &mut Soeprotocol,crc_seed : u8,rc4
     for packet in packets {
         let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap();
         let mut packet_data = soeprotocol.pack(packet_json.name,packet,crc_seed,rc4);
+        write_data_length(&mut wtr,packet_data.len());
         wtr.append(&mut packet_data);
     }
     if was_crc_enabled {
