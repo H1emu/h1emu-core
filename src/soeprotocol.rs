@@ -33,6 +33,7 @@ impl Soeprotocol {
         match packet_name.as_str() {
             "SessionRequest" => return pack_session_request(packet),
             "SessionReply" => return pack_session_reply(packet),
+            "MultiPacket" => return pack_multi(packet, & self, crc_seed, rc4),
             "Disconnect" => return vec![0,5],
             "Ping" => return vec![0,6],
           //  "NetStatusRequest" => return pack_data(packet),
@@ -47,13 +48,13 @@ impl Soeprotocol {
 
  pub fn parse(&self,data: Vec<u8>, rc4: &mut RC4) -> String{
         let mut rdr = Cursor::new(&data);
-
+        println!("{:?}",data);
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
 
         return match opcode {
             0x01 =>  parse_session_request(rdr),
             0x02 =>  parse_session_reply(rdr),
-           // 0x03 => TODO,
+            0x03 =>  parse_multi(rdr, &self, rc4),
             0x05 =>  parse_disconnect(rdr),
             0x06 =>  json!({"name":"Ping"}).to_string(),
            // 0x07 =>  json!({}),
@@ -140,6 +141,23 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
+        )
+    }
+
+    #[test]
+    fn multi_parse_with_crc_test() {
+        let key: [u8; 16] = [
+            23, 189,   8, 107, 27, 148,
+           240,  47, 240, 236, 83, 215,
+            99,  88, 155,  95
+         ];
+        let mut rc4_obj = RC4::initialize(key.to_vec());
+        let soeprotocol_class = Soeprotocol {use_crc:true,use_compression:false,use_encryption:false}; 
+        let data_to_parse:[u8;77] = [0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246, 10, 27];
+        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec(),&mut rc4_obj);
+        assert_eq!(
+            data_parsed,
+            r#"{"sub_packets":[{"name":"Ack","result":{"channel":0,"sequence":206}},{"name":"Data","result":{"channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}}]}"#
         )
     }
 

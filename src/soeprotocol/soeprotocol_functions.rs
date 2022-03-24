@@ -6,6 +6,7 @@ use crate::utils::{str_from_u8_nul_utf8_unchecked,u8_from_str_nul_utf8_unchecked
 use serde::{Serialize,Deserialize};
 use crate::crc::append_crc;
 use crate::rc4::RC4;
+use crate::Soeprotocol;
 
 pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     let crc_length = rdr.read_u32::<BigEndian>().unwrap();
@@ -79,6 +80,14 @@ fn disconnect_reason_to_string(reason_id: u16) -> String {
     }
 }
 
+fn get_data_end(mut rdr: & Cursor<&std::vec::Vec<u8>>, use_crc:bool) -> u64{
+    if use_crc {
+        return (rdr.get_ref().len() as u64) - 2 as u64;
+    } else {
+        return rdr.get_ref().len() as u64;
+    };
+}
+
 pub fn parse_disconnect(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     return json!({
         "name": "Disconnect",
@@ -111,6 +120,59 @@ pub fn pack_session_reply(packet: String) -> Vec<u8>{
     return wtr;
 }
 
+fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u64{
+    let initial_rdr_position = rdr.position();
+    let mut data_length = rdr.read_u8().unwrap() as u64;
+    if data_length > 0xFF {
+        rdr.set_position(initial_rdr_position);
+        data_length = rdr.read_u16::<BigEndian>().unwrap() as u64;
+        if data_length > 0xFFFF{
+            rdr.set_position(initial_rdr_position);
+            data_length = rdr.read_u32::<BigEndian>().unwrap() as u64;
+        }
+    }
+    return data_length;
+}
+
+fn extract_subpacket_data(rdr: &Cursor<&std::vec::Vec<u8>>,data_start_position:u64 ,sub_packet_data_length : u64) -> Vec<u8>{
+    let copy_rdr = rdr.clone();
+    let full_data_vec = copy_rdr.into_inner();
+    return full_data_vec[data_start_position as usize..sub_packet_data_length as usize].to_vec();
+}
+
+pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &Soeprotocol,rc4 :&mut RC4) -> String{
+    let mut sub_packets = vec![];
+    let data_end:u64 = get_data_end(&rdr,soeprotocol.use_crc);
+    loop {
+        let sub_packet_data_length = read_data_length(&mut rdr);
+        let sub_packet_data = extract_subpacket_data(&rdr,rdr.position(),sub_packet_data_length);
+        rdr.set_position(sub_packet_data_length + rdr.position());
+        let sub_packet = soeprotocol.parse(sub_packet_data,rc4);
+        sub_packets.push(sub_packet);
+        if rdr.position() < data_end {
+            break;
+        }
+    }
+    return json!({
+        "subPackets": sub_packets,
+    }).to_string()
+}
+
+#[derive(Serialize, Deserialize)]
+struct SubBasePacket {
+    name: String
+}
+// pack multi packets
+pub fn pack_multi(packet:String,soeprotocol : &Soeprotocol,crc_seed : u8,rc4 :&mut RC4) -> Vec<u8>{
+    let packets: Vec<String> = serde_json::from_str(&packet).unwrap();
+    let mut wtr = vec![];
+    for packet in packets {
+        let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap();
+        let mut packet_data = soeprotocol.pack(packet_json.name,packet,crc_seed,rc4);
+        wtr.append(&mut packet_data);
+    }
+    return wtr;
+}
 pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>,use_crc: bool ,mut _rc4: &mut RC4,opcode : u16) -> String{
     let name = if opcode == 0x09 {
         "Data"
@@ -119,12 +181,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>,use_crc: bool ,mut _rc4: &
     };
     let sequence =  rdr.read_u16::<BigEndian>().unwrap();
 
-    let data_end:u64;
-    if use_crc {
-        data_end = (rdr.get_ref().len() as u64) - 2 as u64;
-    } else {
-        data_end = rdr.get_ref().len() as u64;
-    };
+    let data_end:u64 = get_data_end(&rdr,use_crc);
     let mut crc: u16 = 0;
      if  use_crc {
         rdr.set_position(data_end);
