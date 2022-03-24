@@ -80,7 +80,7 @@ fn disconnect_reason_to_string(reason_id: u16) -> String {
     }
 }
 
-fn get_data_end(mut rdr: & Cursor<&std::vec::Vec<u8>>, use_crc:bool) -> u64{
+fn get_data_end(rdr: & Cursor<&std::vec::Vec<u8>>, use_crc:bool) -> u64{
     if use_crc {
         return (rdr.get_ref().len() as u64) - 2 as u64;
     } else {

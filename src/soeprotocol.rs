@@ -9,7 +9,7 @@ use crate::rc4::RC4;
 #[wasm_bindgen]
 pub struct Soeprotocol {
     use_crc: bool,
-    use_compression : bool,
+    _use_compression : bool,
     use_encryption : bool,
 }
 
@@ -27,7 +27,7 @@ pub enum EncryptMethod {
 impl Soeprotocol {
   #[wasm_bindgen(constructor)]
   pub fn initialize(use_crc: bool,use_compression : bool,use_encryption : bool) -> Soeprotocol { 
-        return Soeprotocol {use_crc,use_compression,use_encryption};
+        return Soeprotocol {use_crc,_use_compression:use_compression,use_encryption};
   }
   pub fn pack(&mut self,packet_name: String, packet: String,crc_seed: u8, rc4: &mut RC4) -> Vec<u8>{
         match packet_name.as_str() {
