@@ -175,6 +175,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>,soeprotocol : &mut Soepro
         soeprotocol.enable_crc();
     }
     return json!({
+        "name": "MultiPacket",
         "sub_packets": sub_packets,
     }).to_string()
 }
