@@ -6,7 +6,7 @@ use crate::utils::{str_from_u8_nul_utf8_unchecked,u8_from_str_nul_utf8_unchecked
 use serde::{Serialize,Deserialize};
 use crate::crc::append_crc;
 use crate::rc4::RC4;
-use crate::Soeprotocol;
+use crate::soeprotocol::Soeprotocol;
 
 pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String{
     let crc_length = rdr.read_u32::<BigEndian>().unwrap();

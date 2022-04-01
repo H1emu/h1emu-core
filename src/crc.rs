@@ -1,3 +1,4 @@
+#[path = "./crc/crc_table.rs"]
 mod crc_table;
 use byteorder::{BigEndian, WriteBytesExt};
 use crc_table::get_crc_table;
