@@ -1,6 +1,7 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
+#[path = "./soeprotocol/soeprotocol_functions.rs"]
 mod soeprotocol_functions;
 use serde_json::*;
 use soeprotocol_functions::*;
@@ -46,6 +47,7 @@ impl Soeprotocol {
         let mut rdr = Cursor::new(&data);
         println!("{:?}", data);
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
+        println!("{:?}", opcode);
 
         return match opcode {
             0x01 => parse_session_request(rdr),
@@ -126,6 +128,110 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
+        )
+    }
+
+    #[test]
+    fn ping_parse_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_parse: [u8; 2] = [
+            0, 6
+        ];
+        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
+        assert_eq!(
+            data_parsed,
+            r#"{"name":"Ping"}"#
+        )
+    }
+
+    #[test]
+    fn ping_pack_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_pack:String = r#"{"name":"Ping"}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Ping".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 6
+            ]
+        )
+    }
+
+    #[test]
+    fn outoforder_parse_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_parse: [u8; 6] = [
+            0, 17,0,1,142,100
+        ];
+        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
+        assert_eq!(
+            data_parsed,
+            r#"{"name":"OutOfOrder","channel":0,"sequence":1}"#
+        )
+    }
+
+    #[test]
+    fn outoforder_pack_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: false };
+        let data_to_pack:String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 17,0,1
+            ]
+        )
+    }
+
+    #[test]
+    fn outoforder_pack_with_crc_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_pack:String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 17,0,1,38, 184
+            ]
+        )
+    }
+
+    #[test]
+    fn ack_parse_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_parse: [u8; 6] = [
+            0, 21,0,1,142,100
+        ];
+        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
+        assert_eq!(
+            data_parsed,
+            r#"{"name":"Ack","channel":0,"sequence":1}"#
+        )
+    }
+
+    #[test]
+    fn ack_pack_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: false };
+        let data_to_pack:String = r#"{"name":"Ack","sequence":1}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 21,0,1
+            ]
+        )
+    }
+
+    #[test]
+    fn ack_pack_with_crc_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: true };
+        let data_to_pack:String = r#"{"name":"Ack","sequence":1}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 21,0,1,142,100
+            ]
         )
     }
 
