@@ -6,9 +6,7 @@ use wasm_bindgen::prelude::*;
 
 pub fn append_crc(data: &mut Vec<u8>, crc_seed: u8) -> () {
     let crc = crc32(&data, (crc_seed >> 0) as usize);
-    data
-        .write_u16::<BigEndian>((crc & 0xffff) as u16)
-        .unwrap();
+    data.write_u16::<BigEndian>((crc & 0xffff) as u16).unwrap();
 }
 
 pub fn crc32(data: &&mut Vec<u8>, crc_seed: usize) -> u32 {
@@ -70,15 +68,16 @@ mod tests {
     #[test]
     fn crc32_test() {
         let mut data: Vec<u8> = [0, 21, 0, 0, 2].to_vec();
-        crc32(&&mut data,0);
-        assert_eq!(crc32(&&mut data,0), 1874907695)
+        crc32(&&mut data, 0);
+        assert_eq!(crc32(&&mut data, 0), 1874907695)
     }
     #[test]
     fn append_crc_test() {
         let mut data: Vec<u8> = [
             0, 9, 0, 0, 0, 169, 183, 185, 67, 241, 64, 164, 5, 143, 19, 35, 87, 21, 163, 205, 26,
             83, 24, 212,
-        ].to_vec();
+        ]
+        .to_vec();
         append_crc(&mut data, 0);
         assert_eq!(
             data,
