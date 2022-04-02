@@ -161,8 +161,8 @@ fn extract_subpacket_data(
 
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soeprotocol) -> String {
     let mut sub_packets: Vec<Value> = vec![];
-    let data_end: u64 = get_data_end(&rdr, soeprotocol.use_crc);
-    let was_crc_enabled = soeprotocol.use_crc;
+    let data_end: u64 = get_data_end(&rdr, soeprotocol.is_using_crc());
+    let was_crc_enabled = soeprotocol.is_using_crc();
     if was_crc_enabled {
         soeprotocol.disable_crc();
     }
@@ -170,8 +170,6 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
         let sub_packet_data_length = read_data_length(&mut rdr);
         let sub_packet_data = extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
         rdr.set_position(sub_packet_data_length as u64 + rdr.position());
-        println!("sub_packet_data_length: {}", sub_packet_data_length);
-        println!("sub_packet_data: {:?}", sub_packet_data);
         let sub_packet = soeprotocol.parse(sub_packet_data);
         sub_packets.push(serde_json::from_str(&sub_packet).unwrap());
         if rdr.position() == data_end {
@@ -208,7 +206,7 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol, crc_seed: u8) -
         .collect();
     let mut wtr = vec![];
     wtr.write_u16::<BigEndian>(0x03).unwrap();
-    let was_crc_enabled = soeprotocol.use_crc;
+    let was_crc_enabled = soeprotocol.is_using_crc();
     if was_crc_enabled {
         soeprotocol.disable_crc();
     }
@@ -239,7 +237,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u1
         crc = rdr.read_u16::<BigEndian>().unwrap();
     }
     let vec = rdr.into_inner();
-    let data = &vec[4..data_end as usize]; // for now since it's only mean to be used in h1emu, the data isn't deciphered but will at some point.
+    let data = &vec[4..data_end as usize]; 
     return json!({
         "name": name,
         "channel": 0,
@@ -251,9 +249,9 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u1
 }
 
 #[derive(Serialize, Deserialize)]
-struct DataPacket {
-    data: Vec<u8>,
-    sequence: u16,
+pub struct DataPacket {
+   pub data: Vec<u8>,
+   pub sequence: u16,
 }
 
 pub fn pack_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
@@ -274,7 +272,7 @@ pub fn pack_fragment_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8
     return wtr;
 }
 
-fn write_packet_data(
+pub fn write_packet_data(
     wtr: &mut Vec<u8>,
     data_packet: &mut DataPacket,
     crc_seed: u8,

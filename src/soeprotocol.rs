@@ -45,9 +45,7 @@ impl Soeprotocol {
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
-        println!("{:?}", data);
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
-        println!("{:?}", opcode);
 
         return match opcode {
             0x01 => parse_session_request(rdr),
@@ -55,14 +53,17 @@ impl Soeprotocol {
             0x03 => parse_multi(rdr, self),
             0x05 => parse_disconnect(rdr),
             0x06 => json!({"name":"Ping"}).to_string(),
-            // 0x07 =>  json!({}),
-            // 0x08 =>  json!({}),
+            0x07 =>  json!({"name":"NetStatusRequest"}).to_string(),
+            0x08 =>  json!({"name":"NetStatusReply"}).to_string(),
             0x09 => parse_data(rdr, self.use_crc, opcode),
             0x0d => parse_data(rdr, self.use_crc, opcode),
             0x11 => parse_ack(rdr, opcode, self.use_crc),
             0x15 => parse_ack(rdr, opcode, self.use_crc),
             _ => "".to_string(),
         };
+    }
+    pub fn is_using_crc(&mut self)->bool {
+        return self.use_crc
     }
     pub fn disable_crc(&mut self) {
         self.use_crc = false;
@@ -134,35 +135,23 @@ mod tests {
     #[test]
     fn ping_parse_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_parse: [u8; 2] = [
-            0, 6
-        ];
+        let data_to_parse: [u8; 2] = [0, 6];
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
-        assert_eq!(
-            data_parsed,
-            r#"{"name":"Ping"}"#
-        )
+        assert_eq!(data_parsed, r#"{"name":"Ping"}"#)
     }
 
     #[test]
     fn ping_pack_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_pack:String = r#"{"name":"Ping"}"#.to_owned();
+        let data_to_pack: String = r#"{"name":"Ping"}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ping".to_owned(), data_to_pack, 0);
-        assert_eq!(
-            data_pack,
-            [
-                0, 6
-            ]
-        )
+        assert_eq!(data_pack, [0, 6])
     }
 
     #[test]
     fn outoforder_parse_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_parse: [u8; 6] = [
-            0, 17,0,1,142,100
-        ];
+        let data_to_parse: [u8; 6] = [0, 17, 0, 1, 142, 100];
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
         assert_eq!(
             data_parsed,
@@ -173,65 +162,56 @@ mod tests {
     #[test]
     fn outoforder_pack_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: false };
-        let data_to_pack:String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
+        let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack, 0);
-        assert_eq!(
-            data_pack,
-            [
-                0, 17,0,1
-            ]
-        )
+        assert_eq!(data_pack, [0, 17, 0, 1])
     }
 
     #[test]
     fn outoforder_pack_with_crc_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_pack:String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
+        let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack, 0);
-        assert_eq!(
-            data_pack,
-            [
-                0, 17,0,1,38, 184
-            ]
-        )
+        assert_eq!(data_pack, [0, 17, 0, 1, 38, 184])
     }
 
     #[test]
     fn ack_parse_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_parse: [u8; 6] = [
-            0, 21,0,1,142,100
-        ];
+        let data_to_parse: [u8; 6] = [0, 21, 0, 1, 142, 100];
         let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
-        assert_eq!(
-            data_parsed,
-            r#"{"name":"Ack","channel":0,"sequence":1}"#
-        )
+        assert_eq!(data_parsed, r#"{"name":"Ack","channel":0,"sequence":1}"#)
     }
 
     #[test]
     fn ack_pack_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: false };
-        let data_to_pack:String = r#"{"name":"Ack","sequence":1}"#.to_owned();
+        let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack, 0);
-        assert_eq!(
-            data_pack,
-            [
-                0, 21,0,1
-            ]
-        )
+        assert_eq!(data_pack, [0, 21, 0, 1])
     }
 
     #[test]
     fn ack_pack_with_crc_test() {
         let mut soeprotocol_class = Soeprotocol { use_crc: true };
-        let data_to_pack:String = r#"{"name":"Ack","sequence":1}"#.to_owned();
+        let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack, 0);
+        assert_eq!(data_pack, [0, 21, 0, 1, 142, 100])
+    }
+
+    #[test]
+    fn multi_parse_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: false };
+        let data_to_parse: [u8; 75] = [
+            0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,
+            228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,
+            204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,
+            145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
+        ];
+        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
         assert_eq!(
-            data_pack,
-            [
-                0, 21,0,1,142,100
-            ]
+            data_parsed,
+            r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#
         )
     }
 
