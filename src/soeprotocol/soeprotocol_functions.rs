@@ -237,7 +237,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u1
         crc = rdr.read_u16::<BigEndian>().unwrap();
     }
     let vec = rdr.into_inner();
-    let data = &vec[4..data_end as usize]; 
+    let data = &vec[4..data_end as usize];
     return json!({
         "name": name,
         "channel": 0,
@@ -250,8 +250,8 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u1
 
 #[derive(Serialize, Deserialize)]
 pub struct DataPacket {
-   pub data: Vec<u8>,
-   pub sequence: u16,
+    pub data: Vec<u8>,
+    pub sequence: u16,
 }
 
 pub fn pack_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {

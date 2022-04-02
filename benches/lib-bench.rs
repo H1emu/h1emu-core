@@ -24,32 +24,45 @@ use soeprotocol::Soeprotocol;
 mod soeprotocol_functions;
 use soeprotocol_functions::*;
 
-
 fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     let data_to_pack: Vec<u8> = [
-            2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
-        ]
-        .to_vec();
-        let mut wtr = vec![];
-        let mut data_packet = DataPacket {
-            data: data_to_pack,
-            sequence: 0,
-        };
-        
+        2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
+    ]
+    .to_vec();
+    let mut wtr = vec![];
+    let mut data_packet = DataPacket {
+        data: data_to_pack,
+        sequence: 0,
+    };
+
     c.bench_function("write_packet_data_crc", |b| {
-        b.iter(|| write_packet_data(black_box(&mut wtr), black_box(&mut data_packet),black_box( 0), black_box(true)))
+        b.iter(|| {
+            write_packet_data(
+                black_box(&mut wtr),
+                black_box(&mut data_packet),
+                black_box(0),
+                black_box(true),
+            )
+        })
     });
     let data_to_pack: Vec<u8> = [
-            2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
-        ]
-        .to_vec();
-        let mut wtr = vec![];
-        let mut data_packet = DataPacket {
-            data: data_to_pack,
-            sequence: 0,
-        };
+        2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
+    ]
+    .to_vec();
+    let mut wtr = vec![];
+    let mut data_packet = DataPacket {
+        data: data_to_pack,
+        sequence: 0,
+    };
     c.bench_function("write_packet_data", |b| {
-        b.iter(|| write_packet_data(black_box(&mut wtr), black_box(&mut data_packet),black_box( 0), black_box(false)))
+        b.iter(|| {
+            write_packet_data(
+                black_box(&mut wtr),
+                black_box(&mut data_packet),
+                black_box(0),
+                black_box(false),
+            )
+        })
     });
 }
 
@@ -177,6 +190,172 @@ fn soeprotocol_parse_benchmarks(c: &mut Criterion) {
     });
 }
 
+fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
+    let mut soeprotocol_class = Soeprotocol::initialize(false);
+    let session_request_to_pack =
+        r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
+            .to_string();
+    let session_reply_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
+    let ping_to_pack: String = r#"{"name":"Ping"}"#.to_owned();
+    let outoforder_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
+    let ack_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
+    let multi_to_pack:String = r#"{"sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+    let data_to_pack =
+        r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+    let data_fragment_to_pack =
+        r#"{"sequence":2,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+
+    // without crc
+
+    c.bench_function("session_request_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "SessionRequest".to_owned(),
+                black_box(session_request_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("session_reply_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "SessionReply".to_owned(),
+                black_box(session_reply_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("ping_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Ping".to_owned(),
+                black_box(ping_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("outoforder_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "OutOfOrder".to_owned(),
+                black_box(outoforder_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("ack_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Ack".to_owned(),
+                black_box(ack_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("multi_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "MultiPacket".to_owned(),
+                black_box(multi_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("data_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Data".to_owned(),
+                black_box(data_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("data_fragment_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "DataFragment".to_owned(),
+                black_box(data_fragment_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+
+    // with crc
+    soeprotocol_class.enable_crc();
+    c.bench_function("session_request_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "SessionRequest".to_owned(),
+                black_box(session_request_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("session_reply_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "SessionReply".to_owned(),
+                black_box(session_reply_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("ping_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Ping".to_owned(),
+                black_box(ping_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("outoforder_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "OutOfOrder".to_owned(),
+                black_box(outoforder_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("ack_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Ack".to_owned(),
+                black_box(ack_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("multi_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "MultiPacket".to_owned(),
+                black_box(multi_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("data_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "Data".to_owned(),
+                black_box(data_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+    c.bench_function("data_fragment_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                "DataFragment".to_owned(),
+                black_box(data_fragment_to_pack.to_string()),
+                black_box(0),
+            )
+        })
+    });
+}
+
 fn crc_legacy_benchmark(c: &mut Criterion) {
     let data: [u8; 24] = [
         0, 9, 0, 0, 0, 169, 183, 185, 67, 241, 64, 164, 5, 143, 19, 35, 87, 21, 163, 205, 26, 83,
@@ -247,7 +426,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     jooat_benchmark(c);
     rc4_benchmark(c);*/
     //soeprotocol_parse_benchmarks(c);
-    soeprotocol_utils_benchmarks(c);
+    soeprotocol_pack_benchmarks(c);
+    //soeprotocol_utils_benchmarks(c);
 }
 
 criterion_group!(benches, criterion_benchmark);

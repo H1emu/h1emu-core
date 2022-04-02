@@ -53,8 +53,8 @@ impl Soeprotocol {
             0x03 => parse_multi(rdr, self),
             0x05 => parse_disconnect(rdr),
             0x06 => json!({"name":"Ping"}).to_string(),
-            0x07 =>  json!({"name":"NetStatusRequest"}).to_string(),
-            0x08 =>  json!({"name":"NetStatusReply"}).to_string(),
+            0x07 => json!({"name":"NetStatusRequest"}).to_string(),
+            0x08 => json!({"name":"NetStatusReply"}).to_string(),
             0x09 => parse_data(rdr, self.use_crc, opcode),
             0x0d => parse_data(rdr, self.use_crc, opcode),
             0x11 => parse_ack(rdr, opcode, self.use_crc),
@@ -62,8 +62,8 @@ impl Soeprotocol {
             _ => "".to_string(),
         };
     }
-    pub fn is_using_crc(&mut self)->bool {
-        return self.use_crc
+    pub fn is_using_crc(&mut self) -> bool {
+        return self.use_crc;
     }
     pub fn disable_crc(&mut self) {
         self.use_crc = false;
@@ -228,6 +228,22 @@ mod tests {
         assert_eq!(
             data_parsed,
             r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#
+        )
+    }
+
+    #[test]
+    fn multi_pack_test() {
+        let mut soeprotocol_class = Soeprotocol { use_crc: false };
+        let data_to_pack:String = r#"{"sub_packets":[{"name":"Ack","channel":0,"sequence":206},{"name":"Data","channel":0,"sequence":1,"crc":0,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack, 0);
+        assert_eq!(
+            data_pack,
+            [
+                0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+                71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
+                169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
+                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
+            ]
         )
     }
 
