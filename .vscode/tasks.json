@@ -1,0 +1,182 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "args": ["build", "-v"],
+        "command": "cargo",
+        "group": "build",
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          }
+        ]
+      },
+      {
+        "label": "build-wasm-release",
+        "args": ["build", "--target nodejs"],
+        "command": "wasm-pack",
+        "group": "build",
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          }
+        ]
+      },
+      {
+        "label": "build-wasm-debug",
+        "args": ["build","--debug","--target nodejs"],
+        "command": "wasm-pack",
+        "group": "build",
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          }
+        ]
+      },
+      {
+        "label": "clean",
+        "args": ["clean"],
+        "command": "cargo",
+        "presentation": {
+          "reveal": "always"
+        }
+      },
+      {
+        "label": "run",
+        "args": ["run", "-v"],
+        "command": "cargo",
+        "presentation": {
+          "reveal": "always"
+        },
+        "group": {
+            "kind": "build",
+            "isDefault": true
+        },
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          }
+        ]
+      },
+      {
+        "label": "test",
+        "args": ["test"],
+        "command": "cargo",
+        "presentation": {
+          "reveal": "always"
+        },
+        "group": {
+            "kind": "z",
+            "isDefault": false
+        },
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          },
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "severity": "error",
+            "pattern": {
+              "regexp": "^.*panicked\\s+at\\s+'(.*)',\\s+(.*):(\\d+)$",
+              "message": 1,
+              "file": 2,
+              "line": 3
+            }
+          }
+        ]
+      },
+      {
+        "label": "bench",
+        "args": ["bench"],
+        "command": "cargo",
+        "presentation": {
+          "reveal": "always"
+        },
+        "group": "test",
+        "problemMatcher": [
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "endLine": 4,
+              "endColumn": 5,
+              "severity": 6,
+              "message": 7
+            }
+          },
+          {
+            "owner": "rust",
+            "fileLocation": ["relative", "${workspaceRoot}"],
+            "severity": "error",
+            "pattern": {
+              "regexp": "^.*panicked\\s+at\\s+'(.*)',\\s+(.*):(\\d+)$",
+              "message": 1,
+              "file": 2,
+              "line": 3
+            }
+          }
+        ]
+      }
+    ]
+  }

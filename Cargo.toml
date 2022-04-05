@@ -1,6 +1,6 @@
 [package]
 name = "h1emu-core"
-version = "0.7.1"
+version = "0.8.0-2"
 edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"
@@ -13,9 +13,12 @@ getrandom = { version = "0.2.5", features = ["js"] }
 rand = "0.8.5"
 byteorder = "1.4.3"
 wee_alloc = "0.4.5"
+serde_json = {version = "1.0.79" , features = ["preserve_order"]}
+serde = { version = "1.0.136", features = ["derive"] }
+
 
 [dev-dependencies]
-criterion = "0.3.5"
+criterion ={ version = "0.3.5", features= ["html_reports"]}
 
 [[bench]]
 name = "lib-bench"
