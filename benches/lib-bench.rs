@@ -84,9 +84,11 @@ fn soeprotocol_parse_benchmarks(c: &mut Criterion) {
 
     let ack_to_parse: [u8; 4] = [0, 21, 0, 1];
 
-    let outoforder_to_parse_crc: [u8; 6] = [0, 17, 0, 1, 142, 100];
+    let outoforder_to_parse_crc: [u8; 6] = [0, 17, 0, 1, 38, 184];
 
     let ack_to_parse_crc: [u8; 6] = [0, 21, 0, 1, 142, 100];
+
+    let ack_to_parse_crc_fail: [u8; 6] = [0, 21, 0, 1, 142, 101];
 
     let multi_to_parse: [u8; 75] = [
         0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71, 228,
@@ -178,6 +180,9 @@ fn soeprotocol_parse_benchmarks(c: &mut Criterion) {
     });
     c.bench_function("ack_to_parse_crc", |b| {
         b.iter(|| soeprotocol_class.parse(black_box(ack_to_parse_crc.to_vec())))
+    });
+    c.bench_function("ack_to_parse_crc_fail", |b| {
+        b.iter(|| soeprotocol_class.parse(black_box(ack_to_parse_crc_fail.to_vec())))
     });
     c.bench_function("multi_to_parse_crc", |b| {
         b.iter(|| soeprotocol_class.parse(black_box(multi_to_parse_crc.to_vec())))
