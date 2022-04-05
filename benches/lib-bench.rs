@@ -38,7 +38,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     c.bench_function("write_packet_data_crc", |b| {
         b.iter(|| {
             write_packet_data(
-                black_box(&mut wtr),
+                black_box(&mut wtr.to_owned()),
                 black_box(&mut data_packet),
                 black_box(0),
                 black_box(true),
@@ -57,7 +57,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     c.bench_function("write_packet_data", |b| {
         b.iter(|| {
             write_packet_data(
-                black_box(&mut wtr),
+                black_box(&mut wtr.to_owned()),
                 black_box(&mut data_packet),
                 black_box(0),
                 black_box(false),
@@ -203,7 +203,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     let data_to_pack =
         r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
     let data_fragment_to_pack =
-        r#"{"sequence":2,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+        r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
 
     // without crc
 
@@ -363,7 +363,7 @@ fn crc_benchmark(c: &mut Criterion) {
     ]
     .to_vec();
     c.bench_function("append_crc", |b| {
-        b.iter(|| append_crc(black_box(&mut data), black_box(0)))
+        b.iter(|| append_crc(black_box(&mut data.to_owned()), black_box(0)))
     });
     drop(data);
     let mut data: Vec<u8> = [0, 21, 0, 0, 2].to_vec();
@@ -404,14 +404,14 @@ fn rc4_benchmark(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    /*crc_legacy_benchmark(c);
+    crc_legacy_benchmark(c);
     crc_benchmark(c);
     utils_benchmark(c);
     jooat_benchmark(c);
-    rc4_benchmark(c);*/
-    //soeprotocol_parse_benchmarks(c);
+    rc4_benchmark(c);
+    soeprotocol_parse_benchmarks(c);
     soeprotocol_pack_benchmarks(c);
-    //soeprotocol_utils_benchmarks(c);
+    soeprotocol_utils_benchmarks(c);
 }
 
 criterion_group!(benches, criterion_benchmark);
