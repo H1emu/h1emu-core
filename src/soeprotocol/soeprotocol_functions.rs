@@ -94,7 +94,6 @@ pub fn parse_disconnect(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         "name": "Disconnect",
         "session_id": rdr.read_u32::<BigEndian>().unwrap(),
         "reason": disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap()),
-        "unk": rdr.read_u16::<BigEndian>().unwrap(),
     })
     .to_string();
 }
