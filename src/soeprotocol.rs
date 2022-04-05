@@ -6,11 +6,20 @@ mod soeprotocol_functions;
 use serde_json::*;
 use soeprotocol_functions::*;
 
+pub struct CachedPacket {
+    parsed: String,
+    packed: Vec<u8>,
+}
+
+pub struct CachedPackets {
+    ping: CachedPacket,
+}
+
 #[wasm_bindgen]
 pub struct Soeprotocol {
     use_crc: bool,
     crc_seed: u8,
-    backed_ping_packet : String
+    cached_packets: CachedPackets,
 }
 
 
@@ -28,7 +37,9 @@ pub enum EncryptMethod {
 impl Soeprotocol {
     #[wasm_bindgen(constructor)]
     pub fn initialize(use_crc: bool,crc_seed: u8) -> Soeprotocol {
-        return Soeprotocol { use_crc, crc_seed, backed_ping_packet: json!({"name":"Ping"}).to_string() };
+        let ping_packet = CachedPacket { parsed:json!({"name":"Ping"}).to_string(), packed:vec![0, 6] };
+        let cached_packets = CachedPackets { ping:ping_packet };
+        return Soeprotocol { use_crc, crc_seed, cached_packets };
     }
     pub fn pack(&mut self, packet_name: String, packet: String) -> Vec<u8> {
         match packet_name.as_str() {
@@ -36,7 +47,7 @@ impl Soeprotocol {
             "SessionReply" => return pack_session_reply(packet),
             "MultiPacket" => return pack_multi(packet, self),
             "Disconnect" => return vec![0, 5],
-            "Ping" => return vec![0, 6],
+            "Ping" => self.cached_packets.ping.packed.to_owned(),
             //  "NetStatusRequest" => return pack_data(packet),
             //   "NetStatusReply" => return pack_data(packet),
             "Data" => return pack_data(packet,self.crc_seed, self.use_crc),
@@ -56,7 +67,7 @@ impl Soeprotocol {
             0x02 => parse_session_reply(rdr),
             0x03 => parse_multi(rdr, self),
             0x05 => parse_disconnect(rdr),
-            0x06 => self.backed_ping_packet.to_owned(),
+            0x06 => self.cached_packets.ping.parsed.to_owned(),
           //  0x07 => json!({"name":"NetStatusRequest"}).to_string(),
           //  0x08 => json!({"name":"NetStatusReply"}).to_string(),
             0x09 => parse_data(rdr, opcode, self.crc_seed ,self.use_crc),
