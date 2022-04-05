@@ -257,7 +257,6 @@ pub fn parse_data(
     }
     return json!({
         "name": name,
-        "channel": 0,
         "sequence": sequence,
         "crc": crc,
         "data": data,
@@ -327,7 +326,6 @@ pub fn parse_ack(
 
     return json!({
       "name": name,
-      "channel": 0,
       "sequence": sequence,
     })
     .to_string();
