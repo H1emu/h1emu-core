@@ -258,7 +258,6 @@ pub fn parse_data(
     return json!({
         "name": name,
         "sequence": sequence,
-        "crc": crc,
         "data": data,
     })
     .to_string();
