@@ -1,4 +1,4 @@
-use crate::crc::append_crc;
+use crate::crc::{append_crc, crc32};
 use crate::soeprotocol::Soeprotocol;
 use crate::utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -196,7 +196,7 @@ struct SubBasePackets {
     sub_packets: Vec<Value>,
 }
 // pack multi packets
-pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol, crc_seed: u8) -> Vec<u8> {
+pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
     let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap();
 
     let packets: Vec<String> = multi_packets
@@ -212,17 +212,17 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol, crc_seed: u8) -
     }
     for packet in packets {
         let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap();
-        let mut packet_data = soeprotocol.pack(packet_json.name, packet, crc_seed);
+        let mut packet_data = soeprotocol.pack(packet_json.name, packet);
         write_data_length(&mut wtr, packet_data.len());
         wtr.append(&mut packet_data);
     }
     if was_crc_enabled {
         soeprotocol.enable_crc();
-        append_crc(&mut wtr, crc_seed)
+        append_crc(&mut wtr, soeprotocol.crc_seed)
     }
     return wtr;
 }
-pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u16) -> String {
+pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16, crc_seed: u8, use_crc: bool) -> String {
     let name = if opcode == 0x09 {
         "Data"
     } else {
@@ -238,6 +238,18 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, use_crc: bool, opcode: u1
     }
     let vec = rdr.into_inner();
     let data = &vec[4..data_end as usize];
+    // check that crc value is correct
+    if use_crc {
+        let packet_without_crc = &vec[0..data_end as usize];
+        let crc_value = crc32(&&mut packet_without_crc.to_vec(),crc_seed as usize);
+        if (crc_value & 0xffff) as u16 != crc {
+            return json!({
+                "name": "Error",
+                "error": "CRC error",
+            })
+            .to_string();
+        }
+    }
     return json!({
         "name": name,
         "channel": 0,
@@ -285,10 +297,24 @@ pub fn write_packet_data(
     }
 }
 
-pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16, _use_crc: bool) -> String {
+pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16,crc_seed:u8, use_crc: bool) -> String {
     let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
     let sequence = rdr.read_u16::<BigEndian>().unwrap();
-    // read and verify crc if needed
+    if use_crc {
+        let crc = rdr.read_u16::<BigEndian>().unwrap();
+        let data_end: u64 = get_data_end(&rdr, use_crc);
+        let vec = rdr.into_inner();
+        let packet_without_crc = &vec[0..data_end as usize];
+        let crc_value = crc32(&&mut packet_without_crc.to_vec(),crc_seed as usize);
+        if (crc_value & 0xffff) as u16 != crc {
+            return json!({
+                "name": "Error",
+                "error": "CRC error",
+            })
+            .to_string();
+        }
+    }
+
     return json!({
       "name": name,
       "channel": 0,
