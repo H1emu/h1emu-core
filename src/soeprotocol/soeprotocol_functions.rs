@@ -222,7 +222,12 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
     }
     return wtr;
 }
-pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16, crc_seed: u8, use_crc: bool) -> String {
+pub fn parse_data(
+    mut rdr: Cursor<&std::vec::Vec<u8>>,
+    opcode: u16,
+    crc_seed: u8,
+    use_crc: bool,
+) -> String {
     let name = if opcode == 0x09 {
         "Data"
     } else {
@@ -241,7 +246,7 @@ pub fn parse_data(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16, crc_seed: u8
     // check that crc value is correct
     if use_crc {
         let packet_without_crc = &vec[0..data_end as usize];
-        let crc_value = crc32(&&mut packet_without_crc.to_vec(),crc_seed as usize);
+        let crc_value = crc32(&&mut packet_without_crc.to_vec(), crc_seed as usize);
         if (crc_value & 0xffff) as u16 != crc {
             return json!({
                 "name": "Error",
@@ -297,7 +302,12 @@ pub fn write_packet_data(
     }
 }
 
-pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16,crc_seed:u8, use_crc: bool) -> String {
+pub fn parse_ack(
+    mut rdr: Cursor<&std::vec::Vec<u8>>,
+    opcode: u16,
+    crc_seed: u8,
+    use_crc: bool,
+) -> String {
     let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
     let sequence = rdr.read_u16::<BigEndian>().unwrap();
     if use_crc {
@@ -305,7 +315,7 @@ pub fn parse_ack(mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16,crc_seed:u8, u
         let data_end: u64 = get_data_end(&rdr, use_crc);
         let vec = rdr.into_inner();
         let packet_without_crc = &vec[0..data_end as usize];
-        let crc_value = crc32(&&mut packet_without_crc.to_vec(),crc_seed as usize);
+        let crc_value = crc32(&&mut packet_without_crc.to_vec(), crc_seed as usize);
         if (crc_value & 0xffff) as u16 != crc {
             return json!({
                 "name": "Error",
