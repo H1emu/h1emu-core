@@ -66,6 +66,9 @@ impl Soeprotocol {
             _ => "".to_string(),
         };
     }
+    pub fn get_crc_seed(&self) -> u8 {
+        return self.crc_seed;
+    }
     pub fn is_using_crc(&mut self) -> bool {
         return self.use_crc;
     }

@@ -218,7 +218,7 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
     }
     if was_crc_enabled {
         soeprotocol.enable_crc();
-        append_crc(&mut wtr, soeprotocol.crc_seed)
+        append_crc(&mut wtr, soeprotocol.get_crc_seed())
     }
     return wtr;
 }
