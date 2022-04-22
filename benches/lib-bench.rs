@@ -33,6 +33,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     let mut data_packet = DataPacket {
         data: data_to_pack,
         sequence: 0,
+        error: None
     };
 
     c.bench_function("write_packet_data_crc", |b| {
@@ -53,6 +54,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     let mut data_packet = DataPacket {
         data: data_to_pack,
         sequence: 0,
+        error: None
     };
     c.bench_function("write_packet_data", |b| {
         b.iter(|| {

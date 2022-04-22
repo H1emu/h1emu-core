@@ -52,7 +52,7 @@ struct SessionRequestPacket {
     crc_length: u32,
     udp_length: u32,
     protocol: String,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_session_request(packet: String) -> Vec<u8> {
@@ -171,7 +171,7 @@ struct SessionReplyPacket {
     crc_length: u8,
     encrypt_method: u16,
     udp_length: u32,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_session_reply(packet: String) -> Vec<u8> {
@@ -276,13 +276,13 @@ struct SubBasePacket {
     name: String,
     sequence: Option<u16>,
     data: Option<Vec<u8>>,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize)]
 struct SubBasePackets {
     sub_packets: Vec<SubBasePacket>,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
@@ -374,7 +374,7 @@ pub fn parse_data(
 pub struct DataPacket {
     pub data: Vec<u8>,
     pub sequence: u16,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
@@ -471,7 +471,7 @@ pub fn parse_ack(
 #[derive(Serialize, Deserialize)]
 struct AckPacket {
     sequence: u16,
-    error: Option<bool> // used internnaly to identify deserialization errors
+    pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_out_of_order(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
