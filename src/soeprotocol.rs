@@ -115,6 +115,19 @@ mod tests {
         )
     }
 
+
+    #[test]
+    fn session_request_parse_size_error_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 12] = [0, 1, 111, 103, 105, 110, 85, 100, 112,95, 57, 2];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 1, 111, 103, 105, 110, 85, 100, 112,95, 57, 2], "size": 12}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
+        )
+    }
+
     #[test]
     fn session_request_pack_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
@@ -128,6 +141,21 @@ mod tests {
                 0, 1, 0, 0, 0, 3, 60, 23, 140, 99, 0, 0, 2, 0, 76, 111, 103, 105, 110, 85, 100,
                 112, 95, 57, 0
             ]
+        )
+    }
+
+    #[test]
+    fn session_reply_parse_size_error_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 10] = [
+            0, 2, 111, 103, 105, 110, 85, 100, 112,
+            95
+        ];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,2,111,103,105,110,85,100,112,95], "size": 10}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
         )
     }
 
@@ -172,6 +200,20 @@ mod tests {
     }
 
     #[test]
+    fn outoforder_parse_size_error_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 3] = [
+            0, 17, 111
+        ];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 17, 111], "size": 3}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
+        )
+    }
+
+    #[test]
     fn outoforder_parse_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 38, 184];
@@ -209,6 +251,20 @@ mod tests {
     }
 
     #[test]
+    fn ack_parse_size_error_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 3] = [
+            0, 21, 111
+        ];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 21, 111], "size": 3}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
+        )
+    }
+
+    #[test]
     fn ack_parse_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 21, 0, 1, 142, 100];
@@ -231,6 +287,32 @@ mod tests {
         let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
         assert_eq!(data_pack, [0, 21, 0, 1, 142, 100])
+    }
+
+    #[test]
+    fn multi_parse_size_error_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 4] = [
+            0, 3, 4, 0
+        ];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 3, 4, 0], "size": 4}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
+        )
+    }
+
+    #[test]
+    fn multi_parse_corrupted_test() {
+        let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 75] = [0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246];
+        let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
+        assert_eq!(
+            data_parsed,
+            succesful_data
+        )
     }
 
     #[test]

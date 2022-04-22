@@ -6,7 +6,28 @@ use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::io::Cursor;
 
+enum PacketsMinSize {
+    SessionRequest = 14,
+    SessionReply = 21,
+    MultiPacket = 7,
+    DataPacket = 5,
+    Ack = 4,
+}
+
+fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size : usize, use_crc: bool) -> bool {
+    if use_crc {
+        return rdr.get_ref().len() >= min_size+2;
+    }
+    else{
+       return rdr.get_ref().len() >= min_size
+    }
+}
+
 pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    if !check_min_size(&rdr,PacketsMinSize::SessionRequest as usize,false) {
+        return gen_size_error_json(rdr);
+    }
+
     let crc_length = rdr.read_u32::<BigEndian>().unwrap();
     let session_id = rdr.read_u32::<BigEndian>().unwrap();
     let udp_length = rdr.read_u32::<BigEndian>().unwrap();
@@ -46,7 +67,29 @@ pub fn pack_session_request(packet: String) -> Vec<u8> {
     return wtr;
 }
 
+fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    return json!({
+        "name": "Error",
+        "error": "size",
+        "size": rdr.get_ref().len(),
+        "raw": rdr.get_ref().to_vec()
+    })
+    .to_string();
+}
+
+fn gen_corruption_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    return json!({
+        "name": "Error",
+        "error": "corruption",
+        "raw": rdr.get_ref().to_vec()
+    })
+    .to_string();
+}
+
 pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    if rdr.get_ref().len() != PacketsMinSize::SessionReply as usize {
+        return gen_size_error_json(rdr);
+    }
     return json!({
         "name": "SessionReply",
         "session_id": rdr.read_u32::<BigEndian>().unwrap(),
@@ -159,6 +202,10 @@ fn extract_subpacket_data(
 }
 
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soeprotocol) -> String {
+    // check size
+    if !check_min_size(&rdr,PacketsMinSize::MultiPacket as usize, soeprotocol.is_using_crc() ) {
+        return gen_size_error_json(rdr);
+    }
     let mut sub_packets: Vec<Value> = vec![];
     let data_end: u64 = get_data_end(&rdr, soeprotocol.is_using_crc());
     let was_crc_enabled = soeprotocol.is_using_crc();
@@ -167,6 +214,9 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     }
     loop {
         let sub_packet_data_length = read_data_length(&mut rdr);
+        if sub_packet_data_length == 0 || sub_packet_data_length as u64 + rdr.position() > data_end {
+            return gen_corruption_error_json(rdr);
+        }
         let sub_packet_data = extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
         rdr.set_position(sub_packet_data_length as u64 + rdr.position());
         let sub_packet = soeprotocol.parse(sub_packet_data);
@@ -229,6 +279,9 @@ pub fn parse_data(
     crc_seed: u8,
     use_crc: bool,
 ) -> String {
+    if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize,use_crc) {
+        return gen_size_error_json(rdr);
+    }
     let name = if opcode == 0x09 {
         "Data"
     } else {
@@ -307,6 +360,9 @@ pub fn parse_ack(
     crc_seed: u8,
     use_crc: bool,
 ) -> String {
+    if !check_min_size(&rdr, PacketsMinSize::Ack as usize,use_crc) {
+        return gen_size_error_json(rdr);
+    }
     let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
     let sequence = rdr.read_u16::<BigEndian>().unwrap();
     if use_crc {
