@@ -52,11 +52,23 @@ struct SessionRequestPacket {
     crc_length: u32,
     udp_length: u32,
     protocol: String,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_session_request(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
-    let packet_json: SessionRequestPacket = serde_json::from_str(&packet).unwrap();
+    let packet_json: SessionRequestPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SessionRequestPacket{
+            session_id: 0,
+            crc_length: 0,
+            udp_length: 0,
+            protocol: "".to_string(),
+            error: Some(true)
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
     wtr.write_u16::<BigEndian>(0x01).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.crc_length).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
@@ -159,11 +171,24 @@ struct SessionReplyPacket {
     crc_length: u8,
     encrypt_method: u16,
     udp_length: u32,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_session_reply(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
-    let packet_json: SessionReplyPacket = serde_json::from_str(&packet).unwrap();
+    let packet_json: SessionReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SessionReplyPacket{
+            session_id: 0,
+            crc_seed: 0,
+            crc_length: 0,
+            encrypt_method: 0,
+            udp_length: 0,
+            error: Some(true)
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
 
     wtr.write_u16::<BigEndian>(0x02).unwrap();
     wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
@@ -251,15 +276,25 @@ struct SubBasePacket {
     name: String,
     sequence: Option<u16>,
     data: Option<Vec<u8>>,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize)]
 struct SubBasePackets {
     sub_packets: Vec<SubBasePacket>,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
-    let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap();
+    let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SubBasePackets{
+            sub_packets: vec![],
+            error: Some(true)
+        };
+    });
+    if multi_packets.error.is_some() {
+        return gen_deserializing_error_json();
+    }
 
     let packets: Vec<String> = multi_packets
         .sub_packets
@@ -273,7 +308,17 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
         soeprotocol.disable_crc();
     }
     for packet in packets {
-        let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap();
+        let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+            return SubBasePacket{
+                name: "".to_string(),
+                sequence: None,
+                data: None,
+                error: Some(true)
+            };
+        });
+        if packet_json.error.is_some() {
+            return gen_deserializing_error_json();
+        }
         let mut packet_data = soeprotocol.pack(packet_json.name, packet);
         write_data_length(&mut wtr, packet_data.len());
         wtr.append(&mut packet_data);
@@ -329,20 +374,51 @@ pub fn parse_data(
 pub struct DataPacket {
     pub data: Vec<u8>,
     pub sequence: u16,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
-    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return DataPacket{
+            data: vec![],
+            sequence: 0,
+            error: Some(true)
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
 
     wtr.write_u16::<BigEndian>(0x09).unwrap();
     write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
     return wtr;
 }
 
+fn gen_deserializing_error_json() -> Vec<u8> {
+    return vec![]; // maybe encoding a null string with error log would be better
+   /* return json!({
+        "name": "Error",
+        "error": "deserializing",
+        "raw": packet
+    })
+    .to_string();*/
+}
+
 pub fn pack_fragment_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
-    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap();
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return DataPacket{
+            data: vec![],
+            sequence: 0,
+            error: Some(true)
+        };
+    });
+
+    if packet_json.error.is_some(){
+        return gen_deserializing_error_json();
+    }
+    
 
     wtr.write_u16::<BigEndian>(0x0d).unwrap();
     write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
@@ -395,12 +471,20 @@ pub fn parse_ack(
 #[derive(Serialize, Deserialize)]
 struct AckPacket {
     sequence: u16,
+    error: Option<bool> // used internnaly to identify deserialization errors
 }
 
 pub fn pack_out_of_order(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
-    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
-
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return AckPacket{
+            sequence: 0,
+            error: Some(true)
+        };
+    });
+    if packet_json.error.is_some(){
+        return gen_deserializing_error_json();
+    }
     wtr.write_u16::<BigEndian>(0x11).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
     if use_crc {
@@ -411,7 +495,15 @@ pub fn pack_out_of_order(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8>
 
 pub fn pack_ack(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
-    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap();
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return AckPacket{
+            sequence: 0,
+            error: Some(true)
+        };
+    });
+    if packet_json.error.is_some(){
+        return gen_deserializing_error_json();
+    }
 
     wtr.write_u16::<BigEndian>(0x15).unwrap();
     wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
@@ -435,6 +527,7 @@ mod tests {
         let mut data_packet = DataPacket {
             data: data_to_pack,
             sequence: 0,
+            error: None,
         };
         write_packet_data(&mut wtr, &mut data_packet, 0, false);
         assert_eq!(
@@ -453,6 +546,7 @@ mod tests {
         let mut data_packet = DataPacket {
             data: data_to_pack,
             sequence: 0,
+            error: None,
         };
         write_packet_data(&mut wtr, &mut data_packet, 0, true);
         assert_eq!(

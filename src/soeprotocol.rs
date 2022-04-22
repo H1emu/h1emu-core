@@ -145,6 +145,19 @@ mod tests {
     }
 
     #[test]
+    fn session_request_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack =
+            r#"{"crc_length":3,"udp_length":512,"protocol":"LoginUdp_9"}"#
+                .to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
+        )
+    }
+
+    #[test]
     fn session_reply_parse_size_error_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 10] = [
@@ -180,6 +193,17 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
+        )
+    }
+
+    #[test]
+    fn session_reply_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack =  r#"{"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
         )
     }
 
@@ -243,6 +267,17 @@ mod tests {
     }
 
     #[test]
+    fn outoforder_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack: String = r#"{"sequednce":1}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
+        )
+    }
+
+    #[test]
     fn outoforder_pack_with_crc_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
@@ -279,6 +314,17 @@ mod tests {
         let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
         assert_eq!(data_pack, [0, 21, 0, 1])
+    }
+
+    #[test]
+    fn ack_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack: String = r#"{"name":"Ack"}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
+        )
     }
 
     #[test]
@@ -366,6 +412,17 @@ mod tests {
     }
 
     #[test]
+    fn multi_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack:String = r#"{"sub_packets":[{"sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
+        )
+    }
+
+    #[test]
     fn multi_pack_with_crc_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_pack:String = r#"{"sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
@@ -432,6 +489,18 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 9, 0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
+        )
+    }
+
+    #[test]
+    fn data_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack =
+            r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
         )
     }
 
@@ -504,6 +573,18 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 13, 0, 2, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
+        )
+    }
+
+    #[test]
+    fn data_fragment_pack_test_deserializing_error() {
+        let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
+        let data_to_pack =
+            r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack("DataFragment".to_owned(), data_to_pack);
+        assert_eq!(
+            data_pack,
+            vec![] as Vec<u8>
         )
     }
 
