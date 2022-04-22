@@ -73,13 +73,13 @@ impl Soeprotocol {
             0x03 => parse_multi(rdr, self),
             0x05 => parse_disconnect(rdr),
             0x06 => self.cached_packets.ping.parsed.to_owned(),
-            //  0x07 => json!({"name":"NetStatusRequest"}).to_string(),
-            //  0x08 => json!({"name":"NetStatusReply"}).to_string(),
+            0x07 => json!({"name":"NetStatusRequest","raw":data}).to_string(),
+            0x08 => json!({"name":"NetStatusReply","raw":data}).to_string(),
             0x09 => parse_data(rdr, opcode, self.crc_seed, self.use_crc),
             0x0d => parse_data(rdr, opcode, self.crc_seed, self.use_crc),
             0x11 => parse_ack(rdr, opcode, self.crc_seed, self.use_crc),
             0x15 => parse_ack(rdr, opcode, self.crc_seed, self.use_crc),
-            _ => "".to_string(),
+            _ => json!({"name":"Unknown","raw":data}).to_string(),
         };
     }
     pub fn get_crc_seed(&self) -> u8 {
