@@ -230,7 +230,7 @@ mod tests {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 142, 100];
         let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data: Value = serde_json::from_str(r#"{"name":"Error","error":"CRC error"}"#).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 9912, "given_crc": 36452, "name": "Error", "raw": [0, 17, 0, 1, 142, 100]}"#).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -417,13 +417,9 @@ mod tests {
     #[test]
     fn data_parse_with_crc_test_fail() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
-        let data_to_parse: [u8; 45] = [
-            0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,
-            113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,
-            117, 146, 204, 94, 61,
-        ];
+        let data_to_parse: [u8; 45] = [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61];
         let data_parsed: Value = serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data: Value = serde_json::from_str(r#"{"name":"Error","error":"CRC error"}"#).unwrap();
+        let succesful_data: Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 24124, "given_crc": 24125, "name": "Error", "raw": [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61]}"#).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
 
