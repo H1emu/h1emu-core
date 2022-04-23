@@ -1,6 +1,6 @@
 [package]
 name = "h1emu-core"
-version = "0.8.4"
+version = "0.8.5"
 edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"
@@ -25,7 +25,9 @@ name = "lib-bench"
 harness = false
 
 [lib]
-crate-type = ["cdylib"]
+name = "h1emu_core"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
 
 [profile.release]
 lto = true
