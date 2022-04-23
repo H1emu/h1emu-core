@@ -65,6 +65,9 @@ impl Soeprotocol {
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
+        if data.len() < 2  {
+            return json!({"name":"Unknown","raw":data}).to_string();
+        }
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
 
         return match opcode {
