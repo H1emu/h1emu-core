@@ -100,10 +100,13 @@ fn gen_crc_error_json(rdr: Cursor<&std::vec::Vec<u8>>,expected_crc:u16,given_crc
     .to_string();
 }
 
-fn gen_corruption_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+fn gen_corruption_error_json(rdr: Cursor<&std::vec::Vec<u8>>,subpacket_length:u32,data_end:u64) -> String {
     return json!({
         "name": "Error",
         "error": "corruption",
+        "subpacket_length": subpacket_length,
+        "data_end": data_end,
+        "position": rdr.position() as usize,
         "raw": rdr.get_ref().to_vec()
     })
     .to_string();
@@ -251,7 +254,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     loop {
         let sub_packet_data_length = read_data_length(&mut rdr);
         if sub_packet_data_length == 0 || sub_packet_data_length as u64 + rdr.position() > data_end {
-            return gen_corruption_error_json(rdr);
+            return gen_corruption_error_json(rdr,sub_packet_data_length,data_end);
         }
         let sub_packet_data = extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
         rdr.set_position(sub_packet_data_length as u64 + rdr.position());
@@ -264,6 +267,8 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     if was_crc_enabled {
         soeprotocol.enable_crc();
     }
+
+    // TODO : check crc
     return json!({
         "name": "MultiPacket",
         "sub_packets": sub_packets,
