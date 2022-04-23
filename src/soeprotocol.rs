@@ -18,7 +18,7 @@ pub struct CachedPackets {
 #[wasm_bindgen]
 pub struct Soeprotocol {
     use_crc: bool,
-    crc_seed: u8,
+    crc_seed: u32,
     cached_packets: CachedPackets,
 }
 
@@ -34,7 +34,7 @@ pub enum EncryptMethod {
 #[wasm_bindgen]
 impl Soeprotocol {
     #[wasm_bindgen(constructor)]
-    pub fn initialize(use_crc: bool, crc_seed: u8) -> Soeprotocol {
+    pub fn initialize(use_crc: bool, crc_seed: u32) -> Soeprotocol {
         let ping_packet = CachedPacket {
             parsed: json!({"name":"Ping"}).to_string(),
             packed: vec![0, 6],
@@ -85,7 +85,7 @@ impl Soeprotocol {
             _ => json!({"name":"Unknown","raw":data}).to_string(),
         };
     }
-    pub fn get_crc_seed(&self) -> u8 {
+    pub fn get_crc_seed(&self) -> u32 {
         return self.crc_seed;
     }
     pub fn is_using_crc(&mut self) -> bool {

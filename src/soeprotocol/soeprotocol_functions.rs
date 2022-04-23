@@ -337,7 +337,7 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
 pub fn parse_data(
     mut rdr: Cursor<&std::vec::Vec<u8>>,
     opcode: u16,
-    crc_seed: u8,
+    crc_seed: u32,
     use_crc: bool,
 ) -> String {
     if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize,use_crc) {
@@ -382,7 +382,7 @@ pub struct DataPacket {
     pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
-pub fn pack_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
+pub fn pack_data(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
     let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
         return DataPacket{
@@ -410,7 +410,7 @@ fn gen_deserializing_error_json() -> Vec<u8> {
     .to_string();*/
 }
 
-pub fn pack_fragment_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
+pub fn pack_fragment_data(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
     let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
         return DataPacket{
@@ -433,7 +433,7 @@ pub fn pack_fragment_data(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8
 pub fn write_packet_data(
     wtr: &mut Vec<u8>,
     data_packet: &mut DataPacket,
-    crc_seed: u8,
+    crc_seed: u32,
     use_crc: bool,
 ) -> () {
     wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap();
@@ -446,7 +446,7 @@ pub fn write_packet_data(
 pub fn parse_ack(
     mut rdr: Cursor<&std::vec::Vec<u8>>,
     opcode: u16,
-    crc_seed: u8,
+    crc_seed: u32,
     use_crc: bool,
 ) -> String {
     if !check_min_size(&rdr, PacketsMinSize::Ack as usize,use_crc) {
@@ -479,7 +479,7 @@ struct AckPacket {
     pub error: Option<bool> // used internnaly to identify deserialization errors
 }
 
-pub fn pack_out_of_order(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
+pub fn pack_out_of_order(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
     let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
         return AckPacket{
@@ -498,7 +498,7 @@ pub fn pack_out_of_order(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8>
     return wtr;
 }
 
-pub fn pack_ack(packet: String, crc_seed: u8, use_crc: bool) -> Vec<u8> {
+pub fn pack_ack(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
     let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
         return AckPacket{
