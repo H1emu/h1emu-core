@@ -56,8 +56,6 @@ pub fn is_pos_in_radius(
     let player_z = player_pos[2];
     let enemi_x = enemi_pos[0];
     let enemi_z = enemi_pos[2];
-
-    let radius = radius.abs();
     
     return  (player_x - radius <= enemi_x && enemi_x <= player_x + radius) && (player_z - radius <= enemi_z && enemi_z <= player_z + radius)
 }

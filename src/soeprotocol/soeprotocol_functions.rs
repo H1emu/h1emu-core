@@ -1,6 +1,8 @@
 use crate::crc::{append_crc, crc32};
 use crate::soeprotocol::Soeprotocol;
-use crate::lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked};
+#[path = "../lib_utils.rs"]
+mod lib_utils;
+use lib_utils::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use serde_json::*;
