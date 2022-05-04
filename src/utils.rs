@@ -45,6 +45,23 @@ pub fn eul2quat(angle: Vec<f32>) -> Vec<f32> {
     return [qx, qy, -qz, qw].to_vec();
   }
 
+
+#[wasm_bindgen]
+pub fn is_pos_in_radius(
+    radius: f32,
+    player_pos: Vec<f32>,
+    enemi_pos: Vec<f32>,
+) -> bool {
+    let player_x = player_pos[0];
+    let player_z = player_pos[2];
+    let enemi_x = enemi_pos[0];
+    let enemi_z = enemi_pos[2];
+
+    let radius = radius.abs();
+    
+    return  (player_x - radius <= enemi_x && enemi_x <= player_x + radius) && (player_z - radius <= enemi_z && enemi_z <= player_z + radius)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -56,5 +73,10 @@ mod tests {
     #[test]
     fn eul2quat_test() {
         assert_eq!(eul2quat([1.0,2.0,3.0].to_vec()), [0.31062245, -0.71828705, 0.44443506, 0.43595284].to_vec())
+    }
+
+    #[test]
+    fn is_pos_in_radius_test() {
+        assert_eq!(is_pos_in_radius(20.0,[0.0,1.0,2.0,0.0].to_vec(),[-19.0,1.0,20.0,0.0].to_vec()), true)
     }
 }
