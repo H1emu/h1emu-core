@@ -53,6 +53,7 @@ struct SessionRequestPacket {
     crc_length: u32,
     udp_length: u32,
     protocol: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
@@ -183,6 +184,7 @@ struct SessionReplyPacket {
     crc_length: u8,
     encrypt_method: u16,
     udp_length: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
@@ -265,7 +267,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     ) {
         return gen_size_error_json(rdr);
     }
-    let mut sub_packets: Vec<MultiPackablePacket> = vec![];
+    let mut multi_result: String = r#"{"name": "MultiPacket","sub_packets":[ "#.to_owned();
     let data_end: u64 = get_data_end(&rdr, soeprotocol.is_using_crc());
     let was_crc_enabled = soeprotocol.is_using_crc();
     if was_crc_enabled {
@@ -280,34 +282,38 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
         let sub_packet_data = extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
         rdr.set_position(sub_packet_data_length as u64 + rdr.position());
         let sub_packet = soeprotocol.parse(sub_packet_data);
-        sub_packets.push(serde_json::from_str(&sub_packet).unwrap());
+        multi_result.push_str(&sub_packet);
         if rdr.position() == data_end {
             break;
         }
+        else{
+            multi_result.push_str(",");
+        }
     }
+    multi_result.push_str("]}");
     if was_crc_enabled {
         soeprotocol.enable_crc();
     }
 
     // TODO : check crc
-    return json!({
-        "name": "MultiPacket",
-        "sub_packets": sub_packets,
-    })
-    .to_string();
+    return multi_result
 }
 
 #[derive(Serialize, Deserialize)]
 struct SubBasePacket {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     sequence: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     data: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize)]
 struct SubBasePackets {
     sub_packets: Vec<SubBasePacket>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
@@ -400,6 +406,7 @@ pub fn parse_data(
 pub struct DataPacket {
     pub data: Vec<u8>,
     pub sequence: u16,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
@@ -496,6 +503,7 @@ pub fn parse_ack(
 #[derive(Serialize, Deserialize)]
 struct AckPacket {
     sequence: u16,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
