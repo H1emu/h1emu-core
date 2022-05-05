@@ -248,6 +248,14 @@ fn extract_subpacket_data(
         .to_vec();
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MultiPackablePacket { // should contain all possible field for a multiPackable packet
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<Vec<u8>>,
+    sequence: u16,
+}
+
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soeprotocol) -> String {
     // check size
     if !check_min_size(
@@ -257,7 +265,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     ) {
         return gen_size_error_json(rdr);
     }
-    let mut sub_packets: Vec<Value> = vec![];
+    let mut sub_packets: Vec<MultiPackablePacket> = vec![];
     let data_end: u64 = get_data_end(&rdr, soeprotocol.is_using_crc());
     let was_crc_enabled = soeprotocol.is_using_crc();
     if was_crc_enabled {
