@@ -89,13 +89,17 @@ fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-fn gen_crc_error_json(rdr: Cursor<&std::vec::Vec<u8>>,expected_crc:u16,given_crc:u16) -> String {
+fn gen_crc_error_json(
+    vec: &Vec<u8>,
+    expected_crc: u16,
+    given_crc: u16,
+) -> String {
     return json!({
         "name": "Error",
         "error": "crc",
         "expected_crc": expected_crc,
         "given_crc": given_crc,
-        "raw": rdr.get_ref().to_vec()
+        "raw": vec
     })
     .to_string();
 }
@@ -233,8 +237,7 @@ fn extract_subpacket_data(
     data_start_position: u64,
     sub_packet_data_length: u32,
 ) -> Vec<u8> {
-    let copy_rdr = rdr.clone();
-    let full_data_vec = copy_rdr.into_inner();
+    let full_data_vec = rdr.get_ref().to_vec();
     return full_data_vec[data_start_position as usize
         ..(data_start_position + sub_packet_data_length as u64) as usize]
         .to_vec();
@@ -356,15 +359,14 @@ pub fn parse_data(
         rdr.set_position(data_end);
         crc = rdr.read_u16::<BigEndian>().unwrap();
     }
-    let rdr_clone = rdr.clone();
-    let vec = rdr.into_inner();
+    let vec = rdr.get_ref().to_vec();
     let data = &vec[4..data_end as usize];
     // check that crc value is correct
     if use_crc {
         let packet_without_crc = &vec[0..data_end as usize];
         let crc_value = (crc32(&&mut packet_without_crc.to_vec(), crc_seed as usize)& 0xffff)as u16;
         if crc_value as u16 != crc {
-            return gen_crc_error_json(rdr_clone, crc_value, crc);
+            return gen_crc_error_json(&vec, crc_value, crc);
         }
     }
     return json!({
@@ -457,12 +459,11 @@ pub fn parse_ack(
     if use_crc {
         let crc = rdr.read_u16::<BigEndian>().unwrap();
         let data_end: u64 = get_data_end(&rdr, use_crc);
-        let rdr_clone = rdr.clone();
         let vec = rdr.into_inner();
         let packet_without_crc = &vec[0..data_end as usize];
         let crc_value = (crc32(&&mut packet_without_crc.to_vec(), crc_seed as usize)& 0xffff)as u16;
         if crc_value as u16 != crc {
-            return gen_crc_error_json(rdr_clone, crc_value, crc);
+            return gen_crc_error_json(vec, crc_value, crc);
         }
     }
 
