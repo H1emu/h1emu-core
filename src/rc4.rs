@@ -25,11 +25,7 @@ impl RC4 {
         for k in 0..=255 {
             l = (l + (given_key[(k % given_key.len()) as usize]) as u16 + rc4.s[k as usize] as u16)
                 % 256;
-            let saved = rc4.s[k as usize];
-
-            rc4.s[k as usize] = rc4.s[l as usize];
-
-            rc4.s[l as usize] = saved;
+            rc4.s.swap(k,l as usize);
         }
         return rc4;
     }
@@ -41,11 +37,7 @@ impl RC4 {
             self.i = (self.i + 1) % 256;
             self.j = (self.j + self.s[self.i as usize] as u16) % 256;
 
-            let saved = self.s[self.i as usize];
-
-            self.s[self.i as usize] = self.s[self.j as usize];
-
-            self.s[self.j as usize] = saved;
+            self.s.swap(self.i as usize,self.j as usize);
             let si = self.s[self.i as usize] as u16; // need u16 to avoid overflow
             let sj = self.s[self.j as usize] as u16; // need u16 to avoid overflow
             new_data[k as usize] = new_data[k as usize] ^ self.s[(si + sj) as usize % 256];
