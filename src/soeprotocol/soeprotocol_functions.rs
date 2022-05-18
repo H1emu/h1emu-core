@@ -328,30 +328,15 @@ pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
         return gen_deserializing_error_json();
     }
 
-    let packets: Vec<String> = multi_packets
-        .sub_packets
-        .iter()
-        .map(|x| serde_json::to_string(x).unwrap())
-        .collect();
     let mut wtr = vec![];
     wtr.write_u16::<BigEndian>(0x03).unwrap();
     let was_crc_enabled = soeprotocol.is_using_crc();
     if was_crc_enabled {
         soeprotocol.disable_crc();
     }
-    for packet in packets {
-        let packet_json: SubBasePacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
-            return SubBasePacket {
-                name: "".to_string(),
-                sequence: None,
-                data: None,
-                error: Some(true),
-            };
-        });
-        if packet_json.error.is_some() {
-            return gen_deserializing_error_json();
-        }
-        let mut packet_data = soeprotocol.pack(packet_json.name, packet);
+    for packet in multi_packets.sub_packets {
+        let packet_json = serde_json::to_string(&packet).unwrap();
+        let mut packet_data = soeprotocol.pack(packet.name, packet_json);
         write_data_length(&mut wtr, packet_data.len());
         wtr.append(&mut packet_data);
     }
