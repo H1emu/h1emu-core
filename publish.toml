@@ -1,0 +1,13 @@
+[tasks.npm-publish]
+command = "npm"
+args = ["publish","-p","./pkg"]
+
+[tasks.crate-publish]
+command = "cargo"
+args = ["publish"]
+
+[tasks.publish-flow]
+dependencies = [
+    "npm-publish",
+    "crate-publish"
+]
