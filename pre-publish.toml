@@ -13,6 +13,7 @@ command = "cargo"
 args = ["test"]
 
 [tasks.wasm-test]
+install_crate = "wasm-pack"
 command = "wasm-pack"
 args = ["build","-t","nodejs"]
 

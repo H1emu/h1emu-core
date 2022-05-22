@@ -1,6 +1,5 @@
 [tasks.npm-publish]
-command = "npm"
-args = ["publish","-p","./pkg"]
+script = "npm publish -p ./pkg"
 
 [tasks.crate-publish]
 command = "cargo"
