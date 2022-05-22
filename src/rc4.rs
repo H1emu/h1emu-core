@@ -3,8 +3,8 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub struct RC4 {
     s: Vec<u8>,
-    i: u16, // need u16 to avoid overflow
-    j: u16, // need u16 to avoid overflow
+    i: u8, 
+    j: u8, 
 }
 
 #[wasm_bindgen]
@@ -21,11 +21,12 @@ impl RC4 {
             rc4.s[k] = k as u8;
         }
 
-        let mut l: u16 = 0;
-        for k in 0..=255 {
-            l = (l + (given_key[(k % given_key.len()) as usize]) as u16 + rc4.s[k as usize] as u16)
-                % 256;
-            rc4.s.swap(k,l as usize);
+        let mut l: u8 = 0;
+        for d in 0..=255 {
+            let k = d as u8;
+            l = l.wrapping_add(given_key[(k % given_key.len() as u8) as usize]).wrapping_add(rc4.s[k as usize])
+                % 255;
+            rc4.s.swap(k.into(),l as usize);
         }
         return rc4;
     }
@@ -34,13 +35,13 @@ impl RC4 {
     pub fn encrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
         let mut new_data: Vec<u8> = data;
         for k in 0..new_data.len() {
-            self.i = (self.i + 1) % 256;
-            self.j = (self.j + self.s[self.i as usize] as u16) % 256;
+            self.i = self.i.wrapping_add(1) % 255;
+            self.j = self.j.wrapping_add(self.s[self.i as usize]) % 255;
 
             self.s.swap(self.i as usize,self.j as usize);
-            let si = self.s[self.i as usize] as u16; // need u16 to avoid overflow
-            let sj = self.s[self.j as usize] as u16; // need u16 to avoid overflow
-            new_data[k as usize] = new_data[k as usize] ^ self.s[(si + sj) as usize % 256];
+            let si = self.s[self.i as usize]; 
+            let sj = self.s[self.j as usize]; 
+            new_data[k as usize] = new_data[k as usize] ^ self.s[si.wrapping_add(sj) as usize % 256];
         }
 
         return new_data;
