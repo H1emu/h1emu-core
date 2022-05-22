@@ -2,117 +2,11 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "build",
-        "args": ["build", "-v"],
-        "command": "cargo",
-        "group": "build",
-        "problemMatcher": [
-          {
-            "owner": "rust",
-            "fileLocation": ["relative", "${workspaceRoot}"],
-            "pattern": {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "endLine": 4,
-              "endColumn": 5,
-              "severity": 6,
-              "message": 7
-            }
-          }
-        ]
-      },
-      {
-        "label": "build-wasm-release",
-        "args": ["build", "--target nodejs"],
-        "command": "wasm-pack",
-        "group": "build",
-        "problemMatcher": [
-          {
-            "owner": "rust",
-            "fileLocation": ["relative", "${workspaceRoot}"],
-            "pattern": {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "endLine": 4,
-              "endColumn": 5,
-              "severity": 6,
-              "message": 7
-            }
-          }
-        ]
-      },
-      {
-        "label": "build-wasm-debug",
-        "args": ["build","--debug","--target nodejs"],
-        "command": "wasm-pack",
-        "group": "build",
-        "problemMatcher": [
-          {
-            "owner": "rust",
-            "fileLocation": ["relative", "${workspaceRoot}"],
-            "pattern": {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "endLine": 4,
-              "endColumn": 5,
-              "severity": 6,
-              "message": 7
-            }
-          }
-        ]
-      },
-      {
-        "label": "clean",
-        "args": ["clean"],
+        "label": "pre-publish",
+        "args": ["make", "--makefile", "pre-publish.toml", "pre-publish-flow"],
         "command": "cargo",
         "presentation": {
           "reveal": "always"
-        }
-      },
-      {
-        "label": "run",
-        "args": ["run", "-v"],
-        "command": "cargo",
-        "presentation": {
-          "reveal": "always"
-        },
-        "group": {
-            "kind": "build",
-            "isDefault": true
-        },
-        "problemMatcher": [
-          {
-            "owner": "rust",
-            "fileLocation": ["relative", "${workspaceRoot}"],
-            "pattern": {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\d+):(\\d+)\\s+(warning|error):\\s+(.*)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "endLine": 4,
-              "endColumn": 5,
-              "severity": 6,
-              "message": 7
-            }
-          }
-        ]
-      },
-      {
-        "label": "test",
-        "args": ["test"],
-        "command": "cargo",
-        "presentation": {
-          "reveal": "always"
-        },
-        "group": {
-            "kind": "z",
-            "isDefault": false
         },
         "problemMatcher": [
           {
@@ -143,8 +37,8 @@
         ]
       },
       {
-        "label": "bench",
-        "args": ["bench"],
+        "label": "publish",
+        "args": ["make", "--makefile", "publish.toml", "publish-flow"],
         "command": "cargo",
         "presentation": {
           "reveal": "always"
