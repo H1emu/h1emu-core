@@ -3,8 +3,8 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub struct RC4 {
     s: Vec<u8>,
-    i: u8, 
-    j: u8, 
+    i: u8,
+    j: u8,
 }
 
 #[wasm_bindgen]
@@ -23,8 +23,10 @@ impl RC4 {
 
         let mut l: u8 = 0;
         for k in 0..=255 {
-            l = l.wrapping_add(given_key[(k % given_key.len() as u8) as usize]).wrapping_add(rc4.s[k as usize]);
-            rc4.s.swap(k.into(),l as usize);
+            l = l
+                .wrapping_add(given_key[(k % given_key.len() as u8) as usize])
+                .wrapping_add(rc4.s[k as usize]);
+            rc4.s.swap(k.into(), l as usize);
         }
         return rc4;
     }
@@ -36,9 +38,9 @@ impl RC4 {
             self.i = self.i.wrapping_add(1);
             self.j = self.j.wrapping_add(self.s[self.i as usize]);
 
-            self.s.swap(self.i as usize,self.j as usize);
-            let si = self.s[self.i as usize]; 
-            let sj = self.s[self.j as usize]; 
+            self.s.swap(self.i as usize, self.j as usize);
+            let si = self.s[self.i as usize];
+            let sj = self.s[self.j as usize];
             new_data[k] = new_data[k] ^ self.s[si.wrapping_add(sj) as usize];
         }
 

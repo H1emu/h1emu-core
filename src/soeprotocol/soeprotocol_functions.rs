@@ -91,11 +91,7 @@ fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-fn gen_crc_error_json(
-    vec: &Vec<u8>,
-    expected_crc: u16,
-    given_crc: u16,
-) -> String {
+fn gen_crc_error_json(vec: &Vec<u8>, expected_crc: u16, given_crc: u16) -> String {
     return json!({
         "name": "Error",
         "error": "crc",
@@ -251,7 +247,8 @@ fn extract_subpacket_data(
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MultiPackablePacket { // should contain all possible field for a multiPackable packet
+pub struct MultiPackablePacket {
+    // should contain all possible field for a multiPackable packet
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     data: Option<Vec<u8>>,
@@ -285,8 +282,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
         multi_result.push_str(&sub_packet);
         if rdr.position() == data_end {
             break;
-        }
-        else{
+        } else {
             multi_result.push_str(",");
         }
     }
@@ -296,7 +292,7 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     }
 
     // TODO : check crc
-    return multi_result
+    return multi_result;
 }
 
 #[derive(Serialize, Deserialize)]
