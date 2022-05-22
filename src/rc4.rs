@@ -22,8 +22,7 @@ impl RC4 {
         }
 
         let mut l: u8 = 0;
-        for d in 0..=255 {
-            let k = d as u8;
+        for k in 0..=255 {
             l = l.wrapping_add(given_key[(k % given_key.len() as u8) as usize]).wrapping_add(rc4.s[k as usize]);
             rc4.s.swap(k.into(),l as usize);
         }
@@ -40,7 +39,7 @@ impl RC4 {
             self.s.swap(self.i as usize,self.j as usize);
             let si = self.s[self.i as usize]; 
             let sj = self.s[self.j as usize]; 
-            new_data[k as usize] = new_data[k as usize] ^ self.s[si.wrapping_add(sj) as usize];
+            new_data[k] = new_data[k] ^ self.s[si.wrapping_add(sj) as usize];
         }
 
         return new_data;
