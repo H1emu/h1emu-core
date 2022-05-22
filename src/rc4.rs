@@ -24,8 +24,7 @@ impl RC4 {
         let mut l: u8 = 0;
         for d in 0..=255 {
             let k = d as u8;
-            l = l.wrapping_add(given_key[(k % given_key.len() as u8) as usize]).wrapping_add(rc4.s[k as usize])
-                % 255;
+            l = l.wrapping_add(given_key[(k % given_key.len() as u8) as usize]).wrapping_add(rc4.s[k as usize]);
             rc4.s.swap(k.into(),l as usize);
         }
         return rc4;
@@ -35,13 +34,13 @@ impl RC4 {
     pub fn encrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
         let mut new_data: Vec<u8> = data;
         for k in 0..new_data.len() {
-            self.i = self.i.wrapping_add(1) % 255;
-            self.j = self.j.wrapping_add(self.s[self.i as usize]) % 255;
+            self.i = self.i.wrapping_add(1);
+            self.j = self.j.wrapping_add(self.s[self.i as usize]);
 
             self.s.swap(self.i as usize,self.j as usize);
             let si = self.s[self.i as usize]; 
             let sj = self.s[self.j as usize]; 
-            new_data[k as usize] = new_data[k as usize] ^ self.s[si.wrapping_add(sj) as usize % 256];
+            new_data[k as usize] = new_data[k as usize] ^ self.s[si.wrapping_add(sj) as usize];
         }
 
         return new_data;
