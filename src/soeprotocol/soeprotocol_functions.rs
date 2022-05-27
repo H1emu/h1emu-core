@@ -267,15 +267,24 @@ pub fn pack_net_status_request(packet: String) -> Vec<u8> {
     }
 
     wtr.write_u16::<BigEndian>(0x07).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.client_tick_count).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.last_client_update).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.average_update).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.shortest_update).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.longest_update).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.last_server_update).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.packets_sent).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.packets_received).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.unknown_field).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_client_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.average_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.shortest_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.longest_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_server_update)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_received)
+        .unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field)
+        .unwrap();
     return wtr;
 }
 
@@ -328,16 +337,22 @@ pub fn pack_net_status_reply(packet: String) -> Vec<u8> {
     }
 
     wtr.write_u16::<BigEndian>(0x08).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.client_tick_count).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.server_tick_count).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.client_packet_sent).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.client_packet_received).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.server_packet_sent).unwrap();
-    wtr.write_u64::<BigEndian>(packet_json.server_packet_received).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.unknown_field).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.server_tick_count)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_received)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_received)
+        .unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field)
+        .unwrap();
     return wtr;
 }
-
 
 fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) -> () {
     if data_length <= 0xFF {

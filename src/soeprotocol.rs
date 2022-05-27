@@ -197,7 +197,8 @@ mod tests {
     fn net_status_request_parse_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 42] = [
-            0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216
+            0, 7, 251, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216,
         ];
         let data_parsed: Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
@@ -208,7 +209,10 @@ mod tests {
     #[test]
     fn net_status_request_parse_deserializing_error() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
-        let data_to_parse: [u8; 43] = [0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216,0];
+        let data_to_parse: [u8; 43] = [
+            0, 7, 251, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216, 0,
+        ];
         let data_parsed: Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216,0], "size": 43}"#).unwrap();
@@ -221,11 +225,13 @@ mod tests {
         let data_to_pack =
         r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> =
+            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
         assert_eq!(
             data_pack,
             [
-                0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216
+                0, 7, 251, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216
             ]
         )
     }
@@ -235,7 +241,8 @@ mod tests {
         let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_count": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> =
+            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -243,7 +250,8 @@ mod tests {
     fn net_status_reply_parse_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 42] = [
-            0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212
+            0, 8, 251, 92, 33, 39, 197, 60, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212,
         ];
         let data_parsed: Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
@@ -254,7 +262,10 @@ mod tests {
     #[test]
     fn net_status_reply_parse_size_error() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
-        let data_to_parse: [u8; 43] = [0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212,0];
+        let data_to_parse: [u8; 43] = [
+            0, 8, 251, 92, 33, 39, 197, 60, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212, 0,
+        ];
         let data_parsed: Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesful_data: Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212,0], "size": 43}"#).unwrap();
@@ -271,7 +282,8 @@ mod tests {
         assert_eq!(
             data_pack,
             [
-                0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212
+                0, 8, 251, 92, 33, 39, 197, 60, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212
             ]
         )
     }
@@ -281,7 +293,8 @@ mod tests {
         let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_cozunt": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> =
+            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
