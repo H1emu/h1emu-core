@@ -3,7 +3,7 @@ script = "npm publish -p ./pkg"
 
 [tasks.crate-publish]
 command = "cargo"
-args = ["publish"]
+args = ["publish","--allow-dirty"]
 
 [tasks.publish-flow]
 dependencies = [
