@@ -11,6 +11,7 @@ use std::io::Cursor;
 enum PacketsMinSize {
     SessionRequest = 14,
     SessionReply = 21,
+    NetStatusPacket = 42,
     MultiPacket = 7,
     DataPacket = 5,
     Ack = 4,
@@ -133,6 +134,44 @@ pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
+#[derive(Serialize, Deserialize)]
+struct SessionReplyPacket {
+    session_id: u32,
+    crc_seed: u32,
+    crc_length: u8,
+    encrypt_method: u16,
+    udp_length: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<bool>, // used internnaly to identify deserialization errors
+}
+
+pub fn pack_session_reply(packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: SessionReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SessionReplyPacket {
+            session_id: 0,
+            crc_seed: 0,
+            crc_length: 0,
+            encrypt_method: 0,
+            udp_length: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x02).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.crc_seed).unwrap();
+    wtr.write_u8(packet_json.crc_length).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.encrypt_method)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
+    wtr.write_u32::<BigEndian>(3).unwrap();
+    return wtr;
+}
+
 fn disconnect_reason_to_string(reason_id: u16) -> String {
     match reason_id {
         0 => "DisconnectReasonIcmpError".to_string(),
@@ -173,26 +212,53 @@ pub fn parse_disconnect(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
+pub fn parse_net_status_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
+        return gen_size_error_json(rdr);
+    }
+    return json!({
+        "name": "NetStatusRequest",
+        "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
+        "last_client_update": rdr.read_u32::<BigEndian>().unwrap(),
+        "average_update": rdr.read_u32::<BigEndian>().unwrap(),
+        "shortest_update": rdr.read_u32::<BigEndian>().unwrap(),
+        "longest_update": rdr.read_u32::<BigEndian>().unwrap(),
+        "last_server_update": rdr.read_u32::<BigEndian>().unwrap(),
+        "packets_sent": rdr.read_u64::<BigEndian>().unwrap(),
+        "packets_received": rdr.read_u64::<BigEndian>().unwrap(),
+        "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
+    })
+    .to_string();
+}
+
 #[derive(Serialize, Deserialize)]
-struct SessionReplyPacket {
-    session_id: u32,
-    crc_seed: u32,
-    crc_length: u8,
-    encrypt_method: u16,
-    udp_length: u32,
+struct NetStatusRequestPacket {
+    client_tick_count: u16,
+    last_client_update: u32,
+    average_update: u32,
+    shortest_update: u32,
+    longest_update: u32,
+    last_server_update: u32,
+    packets_sent: u64,
+    packets_received: u64,
+    unknown_field: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-pub fn pack_session_reply(packet: String) -> Vec<u8> {
+pub fn pack_net_status_request(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
-    let packet_json: SessionReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
-        return SessionReplyPacket {
-            session_id: 0,
-            crc_seed: 0,
-            crc_length: 0,
-            encrypt_method: 0,
-            udp_length: 0,
+    let packet_json: NetStatusRequestPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return NetStatusRequestPacket {
+            client_tick_count: 0,
+            last_client_update: 0,
+            average_update: 0,
+            shortest_update: 0,
+            longest_update: 0,
+            last_server_update: 0,
+            packets_sent: 0,
+            packets_received: 0,
+            unknown_field: 0,
             error: Some(true),
         };
     });
@@ -200,16 +266,78 @@ pub fn pack_session_reply(packet: String) -> Vec<u8> {
         return gen_deserializing_error_json();
     }
 
-    wtr.write_u16::<BigEndian>(0x02).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.crc_seed).unwrap();
-    wtr.write_u8(packet_json.crc_length).unwrap();
-    wtr.write_u16::<BigEndian>(packet_json.encrypt_method)
-        .unwrap();
-    wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
-    wtr.write_u32::<BigEndian>(3).unwrap();
+    wtr.write_u16::<BigEndian>(0x07).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_client_update).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.average_update).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.shortest_update).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.longest_update).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_server_update).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_sent).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_received).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field).unwrap();
     return wtr;
 }
+
+pub fn parse_net_status_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+    if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
+        return gen_size_error_json(rdr);
+    }
+    return json!({
+        "name": "NetStatusReply",
+        "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
+        "server_tick_count": rdr.read_u32::<BigEndian>().unwrap(),
+        "client_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
+        "client_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
+        "server_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
+        "server_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
+        "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
+    })
+    .to_string();
+}
+
+#[derive(Serialize, Deserialize)]
+struct NetStatusReplyPacket {
+    client_tick_count: u16,
+    server_tick_count: u32,
+    client_packet_sent: u64,
+    client_packet_received: u64,
+    server_packet_sent: u64,
+    server_packet_received: u64,
+    unknown_field: u16,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<bool>, // used internnaly to identify deserialization errors
+}
+
+pub fn pack_net_status_reply(packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: NetStatusReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return NetStatusReplyPacket {
+            client_tick_count: 0,
+            server_tick_count: 0,
+            client_packet_sent: 0,
+            client_packet_received: 0,
+            server_packet_sent: 0,
+            server_packet_received: 0,
+            unknown_field: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x08).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.server_tick_count).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_sent).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_received).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_sent).unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_received).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field).unwrap();
+    return wtr;
+}
+
 
 fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) -> () {
     if data_length <= 0xFF {
