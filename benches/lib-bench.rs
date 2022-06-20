@@ -8,6 +8,7 @@ use lib::crc::*;
 use lib::jenkins::*;
 use lib::rc4::*;
 use lib::utils::*;
+use lib::soeprotocol_packets_structs::*;
 
 
 fn soeprotocol_utils_benchmarks(c: &mut Criterion) {

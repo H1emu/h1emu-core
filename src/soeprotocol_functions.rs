@@ -5,6 +5,7 @@ use super::lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unch
 use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::io::Cursor;
+use super::soeprotocol_packets_structs::*;
 
 enum PacketsMinSize {
     SessionRequest = 14,
@@ -46,15 +47,6 @@ pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct SessionRequestPacket {
-    session_id: u32,
-    crc_length: u32,
-    udp_length: u32,
-    protocol: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
 
 pub fn pack_session_request(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
@@ -132,16 +124,7 @@ pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-#[derive(Serialize, Deserialize)]
-struct SessionReplyPacket {
-    session_id: u32,
-    crc_seed: u32,
-    crc_length: u8,
-    encrypt_method: u16,
-    udp_length: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
+
 
 pub fn pack_session_reply(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
@@ -229,21 +212,6 @@ pub fn parse_net_status_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-#[derive(Serialize, Deserialize)]
-struct NetStatusRequestPacket {
-    client_tick_count: u16,
-    last_client_update: u32,
-    average_update: u32,
-    shortest_update: u32,
-    longest_update: u32,
-    last_server_update: u32,
-    packets_sent: u64,
-    packets_received: u64,
-    unknown_field: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
-
 pub fn pack_net_status_request(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
     let packet_json: NetStatusRequestPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
@@ -303,18 +271,6 @@ pub fn parse_net_status_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-#[derive(Serialize, Deserialize)]
-struct NetStatusReplyPacket {
-    client_tick_count: u16,
-    server_tick_count: u32,
-    client_packet_sent: u64,
-    client_packet_received: u64,
-    server_packet_sent: u64,
-    server_packet_received: u64,
-    unknown_field: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
 
 pub fn pack_net_status_reply(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
@@ -387,14 +343,7 @@ fn extract_subpacket_data(
         .to_vec();
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct MultiPackablePacket {
-    // should contain all possible field for a multiPackable packet
-    name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Vec<u8>>,
-    sequence: u16,
-}
+
 
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soeprotocol) -> String {
     // check size
@@ -524,13 +473,7 @@ pub fn parse_data(
     .to_string();
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct DataPacket {
-    pub data: Vec<u8>,
-    pub sequence: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
+
 
 pub fn pack_data(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
@@ -622,12 +565,7 @@ pub fn parse_ack(
     .to_string();
 }
 
-#[derive(Serialize, Deserialize)]
-struct AckPacket {
-    sequence: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
+
 
 pub fn pack_out_of_order(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
