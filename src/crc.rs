@@ -1,7 +1,5 @@
-#[path = "./crc/crc_table.rs"]
-mod crc_table;
+use super::crc_table::get_crc_table;
 use byteorder::{BigEndian, WriteBytesExt};
-use crc_table::get_crc_table;
 use wasm_bindgen::prelude::*;
 
 pub fn append_crc(data: &mut Vec<u8>, crc_seed: u32) -> () {

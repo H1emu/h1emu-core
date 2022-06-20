@@ -1,6 +1,6 @@
 [package]
 name = "h1emu-core"
-version = "0.8.13"
+version = "0.8.14"
 edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"

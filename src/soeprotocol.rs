@@ -1,10 +1,8 @@
+use super::soeprotocol_functions::*;
 use byteorder::{BigEndian, ReadBytesExt};
+use serde_json::*;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
-#[path = "./soeprotocol/soeprotocol_functions.rs"]
-mod soeprotocol_functions;
-use serde_json::*;
-use soeprotocol_functions::*;
 
 pub struct CachedPacket {
     parsed: String,
