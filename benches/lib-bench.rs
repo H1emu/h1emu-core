@@ -2,14 +2,13 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 #[path = "../src/lib.rs"]
 mod lib;
-use lib::soeprotocol::*;
-use lib::soeprotocol_functions::*;
 use lib::crc::*;
 use lib::jenkins::*;
 use lib::rc4::*;
-use lib::utils::*;
+use lib::soeprotocol::*;
+use lib::soeprotocol_functions::*;
 use lib::soeprotocol_packets_structs::*;
-
+use lib::utils::*;
 
 fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     let data_to_pack: Vec<u8> = [

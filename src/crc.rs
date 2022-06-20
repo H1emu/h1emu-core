@@ -1,5 +1,5 @@
-use byteorder::{BigEndian, WriteBytesExt};
 use super::crc_table::get_crc_table;
+use byteorder::{BigEndian, WriteBytesExt};
 use wasm_bindgen::prelude::*;
 
 pub fn append_crc(data: &mut Vec<u8>, crc_seed: u32) -> () {

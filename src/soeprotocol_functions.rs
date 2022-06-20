@@ -1,11 +1,11 @@
 use super::crc::{append_crc, crc32};
-use super::soeprotocol::Soeprotocol;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use super::lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked};
+use super::soeprotocol::Soeprotocol;
+use super::soeprotocol_packets_structs::*;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::io::Cursor;
-use super::soeprotocol_packets_structs::*;
 
 enum PacketsMinSize {
     SessionRequest = 14,
@@ -46,7 +46,6 @@ pub fn parse_session_request(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         .to_string();
     }
 }
-
 
 pub fn pack_session_request(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
@@ -123,8 +122,6 @@ pub fn parse_session_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     })
     .to_string();
 }
-
-
 
 pub fn pack_session_reply(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
@@ -271,7 +268,6 @@ pub fn parse_net_status_reply(mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     .to_string();
 }
 
-
 pub fn pack_net_status_reply(packet: String) -> Vec<u8> {
     let mut wtr = vec![];
     let packet_json: NetStatusReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
@@ -342,8 +338,6 @@ fn extract_subpacket_data(
         ..(data_start_position + sub_packet_data_length as u64) as usize]
         .to_vec();
 }
-
-
 
 pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soeprotocol) -> String {
     // check size
@@ -455,8 +449,6 @@ pub fn parse_data(
     .to_string();
 }
 
-
-
 pub fn pack_data(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
     let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
@@ -546,8 +538,6 @@ pub fn parse_ack(
     })
     .to_string();
 }
-
-
 
 pub fn pack_out_of_order(packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
     let mut wtr = vec![];
