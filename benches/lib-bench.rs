@@ -1,28 +1,14 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-#[path = "../src/rc4.rs"]
-mod rc4;
-use rc4::RC4;
+#[path = "../src/lib.rs"]
+mod lib;
+use lib::soeprotocol::*;
+use lib::soeprotocol_functions::*;
+use lib::crc::*;
+use lib::jenkins::*;
+use lib::rc4::*;
+use lib::utils::*;
 
-#[path = "../src/crc.rs"]
-mod crc;
-use crc::*;
-
-#[path = "../src/jenkins.rs"]
-mod jenkins;
-use jenkins::*;
-
-#[path = "../src/utils.rs"]
-mod utils;
-use utils::*;
-
-#[path = "../src/soeprotocol.rs"]
-mod soeprotocol;
-use soeprotocol::Soeprotocol;
-
-#[path = "../src/soeprotocol/soeprotocol_functions.rs"]
-mod soeprotocol_functions;
-use soeprotocol_functions::*;
 
 fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     let data_to_pack: Vec<u8> = [

@@ -6,6 +6,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[cfg(feature = "crc")]
 pub mod crc;
+#[cfg(feature = "crc")]
+mod crc_table;
 #[cfg(feature = "jenkins")]
 pub mod jenkins;
 pub mod lib_utils;
@@ -13,5 +15,7 @@ pub mod lib_utils;
 pub mod rc4;
 #[cfg(feature = "soeprotocol")]
 pub mod soeprotocol;
+#[cfg(feature = "soeprotocol")]
+pub mod soeprotocol_functions;
 #[cfg(feature = "game-utils")]
 pub mod utils;

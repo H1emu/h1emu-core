@@ -1,9 +1,7 @@
-use crate::crc::{append_crc, crc32};
-use crate::soeprotocol::Soeprotocol;
-#[path = "../lib_utils.rs"]
-mod lib_utils;
+use super::crc::{append_crc, crc32};
+use super::soeprotocol::Soeprotocol;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use lib_utils::*;
+use super::lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked};
 use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::io::Cursor;
