@@ -72,3 +72,21 @@ pub struct NetStatusRequestPacket {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SubBasePacket {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sequence: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<bool>, // used internnaly to identify deserialization errors
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SubBasePackets {
+    pub sub_packets: Vec<SubBasePacket>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<bool>, // used internnaly to identify deserialization errors
+}

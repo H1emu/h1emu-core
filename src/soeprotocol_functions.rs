@@ -385,24 +385,6 @@ pub fn parse_multi(mut rdr: Cursor<&std::vec::Vec<u8>>, soeprotocol: &mut Soepro
     return multi_result;
 }
 
-#[derive(Serialize, Deserialize)]
-struct SubBasePacket {
-    name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    sequence: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Vec<u8>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
-
-#[derive(Serialize, Deserialize)]
-struct SubBasePackets {
-    sub_packets: Vec<SubBasePacket>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
-}
-
 pub fn pack_multi(packet: String, soeprotocol: &mut Soeprotocol) -> Vec<u8> {
     let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap_or_else(|_| {
         return SubBasePackets {
