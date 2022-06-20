@@ -3,7 +3,6 @@ use super::lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unch
 use super::soeprotocol::Soeprotocol;
 use super::soeprotocol_packets_structs::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::io::Cursor;
 
