@@ -1,4 +1,4 @@
-use super::crc::{append_crc};
+use super::crc::append_crc;
 use super::soeprotocol_packets_structs::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde_json::*;
@@ -20,7 +20,6 @@ pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc
         return rdr.get_ref().len() >= min_size;
     }
 }
-
 
 pub fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     return json!({
@@ -59,7 +58,6 @@ pub fn gen_corruption_error_json(
     .to_string();
 }
 
-
 pub fn disconnect_reason_to_string(reason_id: u16) -> String {
     match reason_id {
         0 => "DisconnectReasonIcmpError".to_string(),
@@ -90,9 +88,6 @@ pub fn get_data_end(rdr: &Cursor<&std::vec::Vec<u8>>, use_crc: bool) -> u64 {
         return rdr.get_ref().len() as u64;
     };
 }
-
-
-
 
 pub fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) -> () {
     if data_length <= 0xFF {
@@ -129,8 +124,6 @@ pub fn extract_subpacket_data(
         .to_vec();
 }
 
-
-
 pub fn gen_deserializing_error_json() -> Vec<u8> {
     return vec![]; // maybe encoding a null string with error log would be better
                    /* return json!({
@@ -153,8 +146,6 @@ pub fn write_packet_data(
         append_crc(wtr, crc_seed);
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
