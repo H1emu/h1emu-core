@@ -1,8 +1,9 @@
-use super::soeprotocol_functions::*;
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde_json::*;
 use std::io::Cursor;
+use super::soeprotocol_functions::*;
 use wasm_bindgen::prelude::*;
+use super::{crc::{append_crc, crc32}, lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked},soeprotocol_packets_structs::*};
 
 pub struct CachedPacket {
     parsed: String,
@@ -46,20 +47,266 @@ impl Soeprotocol {
     }
     pub fn pack(&mut self, packet_name: String, packet: String) -> Vec<u8> {
         match packet_name.as_str() {
-            "SessionRequest" => return pack_session_request(packet),
-            "SessionReply" => return pack_session_reply(packet),
-            "MultiPacket" => return pack_multi(packet, self),
+            "SessionRequest" => return self.pack_session_request(packet),
+            "SessionReply" => return self.pack_session_reply(packet),
+            "MultiPacket" => return self.pack_multi(packet),
             "Disconnect" => return vec![0, 5],
             "Ping" => self.cached_packets.ping.packed.to_owned(),
-            "NetStatusRequest" => return pack_net_status_request(packet),
-            "NetStatusReply" => return pack_net_status_reply(packet),
-            "Data" => return pack_data(packet, self.crc_seed, self.use_crc),
-            "DataFragment" => return pack_fragment_data(packet, self.crc_seed, self.use_crc),
-            "OutOfOrder" => return pack_out_of_order(packet, self.crc_seed, self.use_crc),
-            "Ack" => return pack_ack(packet, self.crc_seed, self.use_crc),
+            "NetStatusRequest" => return self.pack_net_status_request(packet),
+            "NetStatusReply" => return self.pack_net_status_reply(packet),
+            "Data" => return self.pack_data(packet, self.crc_seed, self.use_crc),
+            "DataFragment" => return self.pack_fragment_data(packet, self.crc_seed, self.use_crc),
+            "OutOfOrder" => return self.pack_out_of_order(packet, self.crc_seed, self.use_crc),
+            "Ack" => return self.pack_ack(packet, self.crc_seed, self.use_crc),
             _ => return vec![],
         }
     }
+
+    
+pub fn pack_session_request(&mut self,packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: SessionRequestPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SessionRequestPacket {
+            session_id: 0,
+            crc_length: 0,
+            udp_length: 0,
+            protocol: "".to_string(),
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+    wtr.write_u16::<BigEndian>(0x01).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.crc_length).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
+    wtr.append(&mut u8_from_str_nul_utf8_unchecked(
+        packet_json.protocol.as_str(),
+    ));
+    return wtr;
+}
+
+pub fn pack_session_reply(&mut self,packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: SessionReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SessionReplyPacket {
+            session_id: 0,
+            crc_seed: 0,
+            crc_length: 0,
+            encrypt_method: 0,
+            udp_length: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x02).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.session_id).unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.crc_seed).unwrap();
+    wtr.write_u8(packet_json.crc_length).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.encrypt_method)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.udp_length).unwrap();
+    wtr.write_u32::<BigEndian>(3).unwrap();
+    return wtr;
+}
+
+
+
+pub fn pack_net_status_request(&mut self,packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: NetStatusRequestPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return NetStatusRequestPacket {
+            client_tick_count: 0,
+            last_client_update: 0,
+            average_update: 0,
+            shortest_update: 0,
+            longest_update: 0,
+            last_server_update: 0,
+            packets_sent: 0,
+            packets_received: 0,
+            unknown_field: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x07).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_client_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.average_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.shortest_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.longest_update)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.last_server_update)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.packets_received)
+        .unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field)
+        .unwrap();
+    return wtr;
+}
+
+
+
+pub fn pack_net_status_reply(&mut self,packet: String) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: NetStatusReplyPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return NetStatusReplyPacket {
+            client_tick_count: 0,
+            server_tick_count: 0,
+            client_packet_sent: 0,
+            client_packet_received: 0,
+            server_packet_sent: 0,
+            server_packet_received: 0,
+            unknown_field: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x08).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.client_tick_count)
+        .unwrap();
+    wtr.write_u32::<BigEndian>(packet_json.server_tick_count)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.client_packet_received)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_sent)
+        .unwrap();
+    wtr.write_u64::<BigEndian>(packet_json.server_packet_received)
+        .unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.unknown_field)
+        .unwrap();
+    return wtr;
+}
+
+
+
+pub fn pack_multi(&mut self,packet: String) -> Vec<u8> {
+    let multi_packets: SubBasePackets = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return SubBasePackets {
+            sub_packets: vec![],
+            error: Some(true),
+        };
+    });
+    if multi_packets.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    let mut wtr = vec![];
+    wtr.write_u16::<BigEndian>(0x03).unwrap();
+    let was_crc_enabled = self.is_using_crc();
+    if was_crc_enabled {
+        self.disable_crc();
+    }
+    for packet in multi_packets.sub_packets {
+        let packet_json = serde_json::to_string(&packet).unwrap();
+        let mut packet_data = self.pack(packet.name, packet_json);
+        write_data_length(&mut wtr, packet_data.len());
+        wtr.append(&mut packet_data);
+    }
+    if was_crc_enabled {
+        self.enable_crc();
+        append_crc(&mut wtr, self.get_crc_seed())
+    }
+    return wtr;
+}
+
+
+pub fn pack_data(&mut self,packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    let mut wtr = vec![];
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return DataPacket {
+            data: vec![],
+            sequence: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x09).unwrap();
+    write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
+    return wtr;
+}
+
+
+pub fn pack_fragment_data(&mut self,packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    let mut wtr = vec![];
+    let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return DataPacket {
+            data: vec![],
+            sequence: 0,
+            error: Some(true),
+        };
+    });
+
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x0d).unwrap();
+    write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
+    return wtr;
+}
+
+
+pub fn pack_out_of_order(&mut self,packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return AckPacket {
+            sequence: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+    wtr.write_u16::<BigEndian>(0x11).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
+    if use_crc {
+        append_crc(&mut wtr, crc_seed);
+    }
+    return wtr;
+}
+
+pub fn pack_ack(&mut self,packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    let mut wtr = vec![];
+    let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
+        return AckPacket {
+            sequence: 0,
+            error: Some(true),
+        };
+    });
+    if packet_json.error.is_some() {
+        return gen_deserializing_error_json();
+    }
+
+    wtr.write_u16::<BigEndian>(0x15).unwrap();
+    wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
+    if use_crc {
+        append_crc(&mut wtr, crc_seed);
+    }
+    return wtr;
+}
+
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
@@ -69,20 +316,212 @@ impl Soeprotocol {
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
 
         return match opcode {
-            0x01 => parse_session_request(rdr),
-            0x02 => parse_session_reply(rdr),
-            0x03 => parse_multi(rdr, self),
-            0x05 => parse_disconnect(rdr),
+            0x01 => self.parse_session_request(rdr),
+            0x02 => self.parse_session_reply(rdr),
+            0x03 => self.parse_multi(rdr),
+            0x05 => self.parse_disconnect(rdr),
             0x06 => self.cached_packets.ping.parsed.to_owned(),
-            0x07 => parse_net_status_request(rdr),
-            0x08 => parse_net_status_reply(rdr),
-            0x09 => parse_data(rdr, opcode, self.crc_seed, self.use_crc),
-            0x0d => parse_data(rdr, opcode, self.crc_seed, self.use_crc),
-            0x11 => parse_ack(rdr, opcode, self.crc_seed, self.use_crc),
-            0x15 => parse_ack(rdr, opcode, self.crc_seed, self.use_crc),
+            0x07 => self.parse_net_status_request(rdr),
+            0x08 => self.parse_net_status_reply(rdr),
+            0x09 => self.parse_data(rdr, opcode),
+            0x0d => self.parse_data(rdr, opcode),
+            0x11 => self.parse_ack(rdr, opcode),
+            0x15 => self.parse_ack(rdr, opcode),
             _ => json!({"name":"Unknown","raw":data}).to_string(),
         };
     }
+    fn parse_session_request(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        if !check_min_size(&rdr, PacketsMinSize::SessionRequest as usize, false) {
+            return gen_size_error_json(rdr);
+        }
+    
+        let crc_length = rdr.read_u32::<BigEndian>().unwrap();
+        let session_id = rdr.read_u32::<BigEndian>().unwrap();
+        let udp_length = rdr.read_u32::<BigEndian>().unwrap();
+        let protocol_data_position = rdr.position() as usize;
+        let raw_data = rdr.into_inner();
+        unsafe {
+            let protocol = str_from_u8_nul_utf8_unchecked(&raw_data[protocol_data_position..]);
+            return json!({
+                "name": "SessionRequest",
+                "crc_length": crc_length,
+                "session_id": session_id,
+                "udp_length": udp_length,
+                "protocol": protocol,
+            })
+            .to_string();
+        }
+    }
+
+    fn parse_session_reply(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        if rdr.get_ref().len() != PacketsMinSize::SessionReply as usize {
+            return gen_size_error_json(rdr);
+        }
+        return json!({
+            "name": "SessionReply",
+            "session_id": rdr.read_u32::<BigEndian>().unwrap(),
+            "crc_seed": rdr.read_u32::<BigEndian>().unwrap(),
+            "crc_length": rdr.read_u8().unwrap(),
+            "encrypt_method": rdr.read_u16::<BigEndian>().unwrap(),
+            "udp_length": rdr.read_u32::<BigEndian>().unwrap(),
+        })
+        .to_string();
+    }
+
+    fn parse_disconnect(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        return json!({
+            "name": "Disconnect",
+            "session_id": rdr.read_u32::<BigEndian>().unwrap(),
+            "reason": disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap()),
+        })
+        .to_string();
+    }
+
+    fn parse_net_status_request(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
+            return gen_size_error_json(rdr);
+        }
+        return json!({
+            "name": "NetStatusRequest",
+            "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
+            "last_client_update": rdr.read_u32::<BigEndian>().unwrap(),
+            "average_update": rdr.read_u32::<BigEndian>().unwrap(),
+            "shortest_update": rdr.read_u32::<BigEndian>().unwrap(),
+            "longest_update": rdr.read_u32::<BigEndian>().unwrap(),
+            "last_server_update": rdr.read_u32::<BigEndian>().unwrap(),
+            "packets_sent": rdr.read_u64::<BigEndian>().unwrap(),
+            "packets_received": rdr.read_u64::<BigEndian>().unwrap(),
+            "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
+        })
+        .to_string();
+    }
+
+    fn parse_net_status_reply(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
+            return gen_size_error_json(rdr);
+        }
+        return json!({
+            "name": "NetStatusReply",
+            "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
+            "server_tick_count": rdr.read_u32::<BigEndian>().unwrap(),
+            "client_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
+            "client_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
+            "server_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
+            "server_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
+            "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
+        })
+        .to_string();
+    }
+
+    fn parse_multi(&mut self,mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        // check size
+        if !check_min_size(
+            &rdr,
+            PacketsMinSize::MultiPacket as usize,
+            self.is_using_crc(),
+        ) {
+            return gen_size_error_json(rdr);
+        }
+        let mut multi_result: String = r#"{"name": "MultiPacket","sub_packets":[ "#.to_owned();
+        let data_end: u64 = get_data_end(&rdr, self.is_using_crc());
+        let was_crc_enabled = self.is_using_crc();
+        if was_crc_enabled {
+            self.disable_crc();
+        }
+        loop {
+            let sub_packet_data_length = read_data_length(&mut rdr);
+            if sub_packet_data_length == 0 || sub_packet_data_length as u64 + rdr.position() > data_end
+            {
+                return gen_corruption_error_json(rdr, sub_packet_data_length, data_end);
+            }
+            let sub_packet_data = extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
+            rdr.set_position(sub_packet_data_length as u64 + rdr.position());
+            let sub_packet = self.parse(sub_packet_data);
+            multi_result.push_str(&sub_packet);
+            if rdr.position() == data_end {
+                break;
+            } else {
+                multi_result.push_str(",");
+            }
+        }
+        multi_result.push_str("]}");
+        if was_crc_enabled {
+            self.enable_crc();
+        }
+    
+        // TODO : check crc
+        return multi_result;
+    }
+
+    fn parse_data(
+        &mut self,
+        mut rdr: Cursor<&std::vec::Vec<u8>>,
+        opcode: u16,
+    ) -> String {
+        if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize, self.use_crc) {
+            return gen_size_error_json(rdr);
+        }
+        let name = if opcode == 0x09 {
+            "Data"
+        } else {
+            "DataFragment"
+        };
+        let sequence = rdr.read_u16::<BigEndian>().unwrap();
+    
+        let data_end: u64 = get_data_end(&rdr, self.use_crc);
+        let mut crc: u16 = 0;
+        if self.use_crc {
+            rdr.set_position(data_end);
+            crc = rdr.read_u16::<BigEndian>().unwrap();
+        }
+        let vec = rdr.get_ref().to_vec();
+        let data = &vec[4..data_end as usize];
+        // check that crc value is correct
+        if self.use_crc {
+            let packet_without_crc = &vec[0..data_end as usize];
+            let crc_value =
+                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
+            if crc_value as u16 != crc {
+                return gen_crc_error_json(&vec, crc_value, crc);
+            }
+        }
+        return json!({
+            "name": name,
+            "sequence": sequence,
+            "data": data,
+        })
+        .to_string();
+    }
+
+    fn parse_ack(
+        &mut self,
+        mut rdr: Cursor<&std::vec::Vec<u8>>,
+        opcode: u16,
+    ) -> String {
+        if !check_min_size(&rdr, PacketsMinSize::Ack as usize, self.use_crc) {
+            return gen_size_error_json(rdr);
+        }
+        let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
+        let sequence = rdr.read_u16::<BigEndian>().unwrap();
+        if self.use_crc {
+            let crc = rdr.read_u16::<BigEndian>().unwrap();
+            let data_end: u64 = get_data_end(&rdr, self.use_crc);
+            let vec = rdr.into_inner();
+            let packet_without_crc = &vec[0..data_end as usize];
+            let crc_value =
+                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
+            if crc_value as u16 != crc {
+                return gen_crc_error_json(vec, crc_value, crc);
+            }
+        }
+    
+        return json!({
+          "name": name,
+          "sequence": sequence,
+        })
+        .to_string();
+    }
+
     pub fn get_crc_seed(&self) -> u32 {
         return self.crc_seed;
     }
