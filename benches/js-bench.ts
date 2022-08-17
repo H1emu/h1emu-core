@@ -1,7 +1,7 @@
 import { Soeprotocol } from "../pkg/h1emu_core.js";
 
 function bench(name: string, func: any) {
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 100; i++) {
     func();
   }
   console.time(name);
@@ -87,21 +87,55 @@ bench("Parse Data Fragment packet", () => {
   soeProtocol.parse(dataFragmentPacket);
 });
 
+console.log("\n Parse tests with Buffer.from \n");
+
+bench("Parse Session Request", () => {
+  Buffer.from(soeProtocol.parse(sessionRequest));
+});
+
+bench("Parse Session Reply", () => {
+  Buffer.from(soeProtocol.parse(sessionReply));
+});
+
+bench("Parse Ping", () => {
+  Buffer.from(soeProtocol.parse(ping));
+});
+
+bench("Parse Out of order packet", () => {
+  Buffer.from(soeProtocol.parse(outOfOrderPacket));
+});
+
+bench("Parse Ack packet", () => {
+  Buffer.from(soeProtocol.parse(ackPacket));
+});
+
+bench("Parse Multi packet", () => {
+  Buffer.from(soeProtocol.parse(MultiPacket));
+});
+
+bench("Parse Data packet", () => {
+  Buffer.from(soeProtocol.parse(dataPacket));
+});
+
+bench("Parse Data Fragment packet", () => {
+  Buffer.from(soeProtocol.parse(dataFragmentPacket));
+});
+
 console.log("\n Pack tests \n");
 
 const sessionRequestToPack =
-  "{'crc_length':3,'session_id':1008176227,'udp_length':512,'protocol':'LoginUdp_9'}";
+  '{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}';
 const sessionReplyToPack =
-  "{'session_id':1008176227,'crc_seed':0,'crc_length':2,'encrypt_method':256,'udp_length':512}";
-const pingToPack = "{'name':'Ping'}";
-const outOfOrderPacketToPack = "{'name':'OutOfOrder','sequence':1}";
-const ackPacketToPack = "{'name':'Ack','sequence':1}";
+  '{"session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}';
+const pingToPack = '{"name":"Ping"}';
+const outOfOrderPacketToPack = '{"name":"OutOfOrder","sequence":1}';
+const ackPacketToPack = '{"name":"Ack","sequence":1}';
 const MultiPacketToPack =
-  "{'sub_packets':[{'name':'Ack','sequence':206},{'name':'Data','sequence':1,'data':[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}";
+  '{"sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}';
 const dataPacketToPack =
-  "{'sequence':0,'data':[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}";
+  '{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}';
 const dataFragmentPacketToPack =
-  "{'sequence':0,'data':[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}";
+  '{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}';
 
 bench("Pack Session Request", () => {
   soeProtocol.pack_session_request(sessionRequestToPack);
@@ -133,4 +167,45 @@ bench("Pack Data packet", () => {
 
 bench("Pack Data Fragment packet", () => {
   soeProtocol.pack_data(dataFragmentPacketToPack);
+});
+
+console.log("\n Pack tests with stringify \n");
+
+const sessionRequestToPackStringify = JSON.parse(sessionRequestToPack);
+const sessionReplyToPackStringify = JSON.parse(sessionReplyToPack);
+const pingToPackStringify = JSON.parse(pingToPack);
+const outOfOrderPacketToPackStringify = JSON.parse(outOfOrderPacketToPack);
+const ackPacketToPackStringify = JSON.parse(ackPacketToPack);
+const MultiPacketToPackStringify = JSON.parse(MultiPacketToPack);
+const dataPacketToPackStringify = JSON.parse(dataPacketToPack);
+const dataFragmentPacketToPackStringify = JSON.parse(dataFragmentPacketToPack);
+
+bench("Pack Session Request", () => {
+  soeProtocol.pack_session_request(
+    JSON.stringify(sessionRequestToPackStringify)
+  );
+});
+
+bench("Pack Session Reply", () => {
+  soeProtocol.pack_session_reply(JSON.stringify(sessionReplyToPackStringify));
+});
+bench("Pack Ping", () => {
+  soeProtocol.pack("Ping", JSON.stringify(pingToPackStringify));
+});
+bench("Pack Out of order packet", () => {
+  soeProtocol.pack_out_of_order(
+    JSON.stringify(outOfOrderPacketToPackStringify)
+  );
+});
+bench("Pack Ack packet", () => {
+  soeProtocol.pack_ack(JSON.stringify(ackPacketToPackStringify));
+});
+bench("Pack Multi packet", () => {
+  soeProtocol.pack_multi(JSON.stringify(MultiPacketToPackStringify));
+});
+bench("Pack Data packet", () => {
+  soeProtocol.pack_data(JSON.stringify(dataPacketToPackStringify));
+});
+bench("Pack Data Fragment packet", () => {
+  soeProtocol.pack_data(JSON.stringify(dataFragmentPacketToPackStringify));
 });
