@@ -58,10 +58,10 @@ impl Soeprotocol {
             "Ping" => self.cached_packets.ping.packed.to_owned(),
             "NetStatusRequest" => return self.pack_net_status_request(packet),
             "NetStatusReply" => return self.pack_net_status_reply(packet),
-            "Data" => return self.pack_data(packet, self.crc_seed, self.use_crc),
-            "DataFragment" => return self.pack_fragment_data(packet, self.crc_seed, self.use_crc),
-            "OutOfOrder" => return self.pack_out_of_order(packet, self.crc_seed, self.use_crc),
-            "Ack" => return self.pack_ack(packet, self.crc_seed, self.use_crc),
+            "Data" => return self.pack_data(packet),
+            "DataFragment" => return self.pack_fragment_data(packet),
+            "OutOfOrder" => return self.pack_out_of_order(packet),
+            "Ack" => return self.pack_ack(packet),
             _ => return vec![],
         }
     }
@@ -228,7 +228,7 @@ impl Soeprotocol {
         return wtr;
     }
 
-    pub fn pack_data(&mut self, packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    pub fn pack_data(&mut self, packet: String) -> Vec<u8> {
         let mut wtr = vec![];
         let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
             return DataPacket {
@@ -242,11 +242,11 @@ impl Soeprotocol {
         }
 
         wtr.write_u16::<BigEndian>(0x09).unwrap();
-        write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
+        write_packet_data(&mut wtr, &mut packet_json, self.crc_seed, self.use_crc);
         return wtr;
     }
 
-    pub fn pack_fragment_data(&mut self, packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
         let mut wtr = vec![];
         let mut packet_json: DataPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
             return DataPacket {
@@ -261,11 +261,11 @@ impl Soeprotocol {
         }
 
         wtr.write_u16::<BigEndian>(0x0d).unwrap();
-        write_packet_data(&mut wtr, &mut packet_json, crc_seed, use_crc);
+        write_packet_data(&mut wtr, &mut packet_json, self.crc_seed, self.use_crc);
         return wtr;
     }
 
-    pub fn pack_out_of_order(&mut self, packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
         let mut wtr = vec![];
         let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
             return AckPacket {
@@ -278,13 +278,13 @@ impl Soeprotocol {
         }
         wtr.write_u16::<BigEndian>(0x11).unwrap();
         wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-        if use_crc {
-            append_crc(&mut wtr, crc_seed);
+        if self.use_crc {
+            append_crc(&mut wtr, self.crc_seed);
         }
         return wtr;
     }
 
-    pub fn pack_ack(&mut self, packet: String, crc_seed: u32, use_crc: bool) -> Vec<u8> {
+    pub fn pack_ack(&mut self, packet: String) -> Vec<u8> {
         let mut wtr = vec![];
         let packet_json: AckPacket = serde_json::from_str(&packet).unwrap_or_else(|_| {
             return AckPacket {
@@ -298,8 +298,8 @@ impl Soeprotocol {
 
         wtr.write_u16::<BigEndian>(0x15).unwrap();
         wtr.write_u16::<BigEndian>(packet_json.sequence).unwrap();
-        if use_crc {
-            append_crc(&mut wtr, crc_seed);
+        if self.use_crc {
+            append_crc(&mut wtr, self.crc_seed);
         }
         return wtr;
     }
