@@ -338,14 +338,10 @@ impl Soeprotocol {
         let raw_data = rdr.into_inner();
         unsafe {
             let protocol = str_from_u8_nul_utf8_unchecked(&raw_data[protocol_data_position..]);
-            return json!({
-                "name": "SessionRequest",
-                "crc_length": crc_length,
-                "session_id": session_id,
-                "udp_length": udp_length,
-                "protocol": protocol,
-            })
-            .to_string();
+            return format!(
+                r#"{{"name":"SessionRequest","crc_length":{},"session_id":{},"udp_length":{},"protocol":"{}"}}"#,
+                crc_length, session_id, udp_length, protocol
+            );
         }
     }
 
@@ -353,60 +349,77 @@ impl Soeprotocol {
         if rdr.get_ref().len() != PacketsMinSize::SessionReply as usize {
             return gen_size_error_json(rdr);
         }
-        return json!({
-            "name": "SessionReply",
-            "session_id": rdr.read_u32::<BigEndian>().unwrap(),
-            "crc_seed": rdr.read_u32::<BigEndian>().unwrap(),
-            "crc_length": rdr.read_u8().unwrap(),
-            "encrypt_method": rdr.read_u16::<BigEndian>().unwrap(),
-            "udp_length": rdr.read_u32::<BigEndian>().unwrap(),
-        })
-        .to_string();
+        let session_id = rdr.read_u32::<BigEndian>().unwrap();
+        let crc_seed = rdr.read_u32::<BigEndian>().unwrap();
+        let crc_length = rdr.read_u8().unwrap();
+        let encrypt_method = rdr.read_u16::<BigEndian>().unwrap();
+        let udp_length = rdr.read_u32::<BigEndian>().unwrap();
+        return format!(
+            r#"{{"name":"SessionReply","session_id":{},"crc_seed":{},"crc_length":{},"encrypt_method":{},"udp_length":{}}}"#,
+            session_id, crc_seed, crc_length, encrypt_method, udp_length
+        );
     }
 
     fn parse_disconnect(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        return json!({
-            "name": "Disconnect",
-            "session_id": rdr.read_u32::<BigEndian>().unwrap(),
-            "reason": disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap()),
-        })
-        .to_string();
+        if rdr.get_ref().len() != PacketsMinSize::Disconnect as usize {
+            return gen_size_error_json(rdr);
+        }
+        let session_id = rdr.read_u32::<BigEndian>().unwrap();
+        let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap());
+        return format!(
+            r#"{{"name":"Disconnect" ,"session_id":{},"reason":"{}"}}"#,
+            session_id, reason
+        );
     }
 
     fn parse_net_status_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
             return gen_size_error_json(rdr);
         }
-        return json!({
-            "name": "NetStatusRequest",
-            "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
-            "last_client_update": rdr.read_u32::<BigEndian>().unwrap(),
-            "average_update": rdr.read_u32::<BigEndian>().unwrap(),
-            "shortest_update": rdr.read_u32::<BigEndian>().unwrap(),
-            "longest_update": rdr.read_u32::<BigEndian>().unwrap(),
-            "last_server_update": rdr.read_u32::<BigEndian>().unwrap(),
-            "packets_sent": rdr.read_u64::<BigEndian>().unwrap(),
-            "packets_received": rdr.read_u64::<BigEndian>().unwrap(),
-            "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
-        })
-        .to_string();
+        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap();
+        let last_client_update = rdr.read_u32::<BigEndian>().unwrap();
+        let average_update = rdr.read_u32::<BigEndian>().unwrap();
+        let shortest_update = rdr.read_u32::<BigEndian>().unwrap();
+        let longest_update = rdr.read_u32::<BigEndian>().unwrap();
+        let last_server_update = rdr.read_u32::<BigEndian>().unwrap();
+        let packets_sent = rdr.read_u64::<BigEndian>().unwrap();
+        let packets_received = rdr.read_u64::<BigEndian>().unwrap();
+        let unknown_field = rdr.read_u16::<BigEndian>().unwrap();
+        return format!(
+            r#"{{"name":"NetStatusRequest","client_tick_count":{},"last_client_update":{},"average_update":{},"shortest_update":{},"longest_update":{},"last_server_update":{},"packets_sent":{},"packets_received":{},"unknown_field":{}}}"#,
+            client_tick_count,
+            last_client_update,
+            average_update,
+            shortest_update,
+            longest_update,
+            last_server_update,
+            packets_sent,
+            packets_received,
+            unknown_field
+        );
     }
 
     fn parse_net_status_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
             return gen_size_error_json(rdr);
         }
-        return json!({
-            "name": "NetStatusReply",
-            "client_tick_count": rdr.read_u16::<BigEndian>().unwrap(),
-            "server_tick_count": rdr.read_u32::<BigEndian>().unwrap(),
-            "client_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
-            "client_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
-            "server_packet_sent": rdr.read_u64::<BigEndian>().unwrap(),
-            "server_packet_received": rdr.read_u64::<BigEndian>().unwrap(),
-            "unknown_field": rdr.read_u16::<BigEndian>().unwrap(),
-        })
-        .to_string();
+        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap();
+        let server_tick_count = rdr.read_u32::<BigEndian>().unwrap();
+        let client_packet_sent = rdr.read_u64::<BigEndian>().unwrap();
+        let client_packet_received = rdr.read_u64::<BigEndian>().unwrap();
+        let server_packet_sent = rdr.read_u64::<BigEndian>().unwrap();
+        let server_packet_received = rdr.read_u64::<BigEndian>().unwrap();
+        let unknown_field = rdr.read_u16::<BigEndian>().unwrap();
+        return format!(
+            r#"{{"name":"NetStatusReply","client_tick_count":{},"server_tick_count":{},"client_packet_sent":{},"client_packet_received":{},"server_packet_sent":{},"server_packet_received":{},"unknown_field":{}}}"#,
+            client_tick_count,
+            server_tick_count,
+            client_packet_sent,
+            client_packet_received,
+            server_packet_sent,
+            server_packet_received,
+            unknown_field
+        );
     }
 
     fn parse_multi(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
@@ -479,12 +492,10 @@ impl Soeprotocol {
                 return gen_crc_error_json(&vec, crc_value, crc);
             }
         }
-        return json!({
-            "name": name,
-            "sequence": sequence,
-            "data": data,
-        })
-        .to_string();
+        return format!(
+            r#"{{"name":"{}","sequence":{},"data":{:?}}}"#,
+            name, sequence, data
+        );
     }
 
     fn parse_ack(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> String {
@@ -504,12 +515,7 @@ impl Soeprotocol {
                 return gen_crc_error_json(vec, crc_value, crc);
             }
         }
-
-        return json!({
-          "name": name,
-          "sequence": sequence,
-        })
-        .to_string();
+        return format!(r#"{{"name":"{}","sequence":{}}}"#, name, sequence);
     }
 
     pub fn get_crc_seed(&self) -> u32 {

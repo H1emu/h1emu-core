@@ -7,6 +7,7 @@ use std::io::Cursor;
 pub enum PacketsMinSize {
     SessionRequest = 14,
     SessionReply = 21,
+    Disconnect = 6,
     NetStatusPacket = 42,
     MultiPacket = 7,
     DataPacket = 5,
