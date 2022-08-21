@@ -211,7 +211,9 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     let session_request_to_pack_object =
         soeprotocol_class.get_session_request_object(session_request_to_pack.to_string());
     c.bench_function("session_request_pack_from_object", |b| {
-        b.iter(|| soeprotocol_class.pack_session_request_object(session_request_to_pack_object.clone()))
+        b.iter(|| {
+            soeprotocol_class.pack_session_request_object(session_request_to_pack_object.clone())
+        })
     });
     c.bench_function("session_reply_to_pack", |b| {
         b.iter(|| {
