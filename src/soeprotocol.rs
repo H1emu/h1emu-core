@@ -49,7 +49,7 @@ impl Soeprotocol {
         });
     }
 
-    pub fn pack_session_request_object(&mut self, packet: &SessionRequestPacket) -> Vec<u8> {
+    pub fn pack_session_request_object(&mut self, packet: SessionRequestPacket) -> Vec<u8> {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
@@ -77,7 +77,7 @@ impl Soeprotocol {
         });
     }
 
-    pub fn pack_session_reply_object(&mut self, packet: &SessionReplyPacket) -> Vec<u8> {
+    pub fn pack_session_reply_object(&mut self, packet: SessionReplyPacket) -> Vec<u8> {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
@@ -112,7 +112,7 @@ impl Soeprotocol {
         });
     }
 
-    pub fn pack_net_status_request_object(&mut self, packet: &NetStatusRequestPacket) -> Vec<u8> {
+    pub fn pack_net_status_request_object(&mut self, packet: NetStatusRequestPacket) -> Vec<u8> {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
@@ -148,7 +148,7 @@ impl Soeprotocol {
         });
     }
 
-    pub fn pack_net_status_reply_object(&mut self, packet: &NetStatusReplyPacket) -> Vec<u8> {
+    pub fn pack_net_status_reply_object(&mut self, packet: NetStatusReplyPacket) -> Vec<u8> {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
@@ -302,27 +302,49 @@ impl Soeprotocol {
 
     pub fn pack_session_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
         let packet: SessionRequestPacket = js_object.into_serde().unwrap();
-        return self.pack_session_request_object(&packet);
+        return self.pack_session_request_object(packet);
     }
 
     pub fn pack_session_request(&mut self, packet: String) -> Vec<u8> {
         let packet_object: SessionRequestPacket = self.get_session_request_object(packet);
-        return self.pack_session_request_object(&packet_object);
+        return self.pack_session_request_object(packet_object);
+    }
+
+    pub fn pack_session_request_packet(&mut self, session_id: u32, crc_length : u32,udp_length : u32,protocol: String) -> Vec<u8> {
+        return self.pack_session_request_object(SessionRequestPacket {
+            session_id,
+            crc_length,
+            udp_length,
+            protocol,
+            error: None,
+        });
     }
 
     pub fn pack_session_reply(&mut self, packet: String) -> Vec<u8> {
         let packet_json: SessionReplyPacket = self.get_session_reply_object(packet);
-        return self.pack_session_reply_object(&packet_json);
+        return self.pack_session_reply_object(packet_json);
     }
+
+    pub fn pack_session_reply_packet(&mut self, session_id: u32, crc_seed : u32,crc_length : u8,encrypt_method: u16,udp_length: u32) -> Vec<u8> {
+        return self.pack_session_reply_object(SessionReplyPacket {
+            session_id,
+            crc_seed,
+            crc_length,
+            encrypt_method,
+            udp_length,
+            error: None,
+        });
+    }
+
 
     pub fn pack_net_status_request(&mut self, packet: String) -> Vec<u8> {
         let packet_json: NetStatusRequestPacket = self.get_net_status_request_object(packet);
-        return self.pack_net_status_request_object(&packet_json);
+        return self.pack_net_status_request_object(packet_json);
     }
 
     pub fn pack_net_status_reply(&mut self, packet: String) -> Vec<u8> {
         let packet_json: NetStatusReplyPacket = self.get_net_status_reply_object(packet);
-        return self.pack_net_status_reply_object(&packet_json);
+        return self.pack_net_status_reply_object(packet_json);
     }
 
     pub fn pack_multi(&mut self, packet: String) -> Vec<u8> {
@@ -335,19 +357,49 @@ impl Soeprotocol {
         return self.pack_data_object(packet_json);
     }
 
+    pub fn pack_data_packet(&mut self, data: Vec<u8>, sequence : u16) -> Vec<u8> {
+        return self.pack_data_object(DataPacket {
+            data,
+            sequence,
+            error: None,
+        });
+    }
+
     pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
         let packet_json: DataPacket = self.get_data_object(packet);
         return self.pack_fragment_data_object(packet_json);
+    }
+
+    pub fn pack_fragment_data_packet(&mut self, data: Vec<u8>, sequence : u16) -> Vec<u8> {
+        return self.pack_fragment_data_object(DataPacket {
+            data,
+            sequence,
+            error: None,
+        });
     }
 
     pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
         let packet_json: AckPacket = self.get_ack_object(packet);
         return self.pack_out_of_order_object(packet_json);
     }
+    
+    pub fn pack_out_of_order_packet(&mut self, sequence : u16) -> Vec<u8> {
+        return self.pack_out_of_order_object(AckPacket {
+            sequence,
+            error: None,
+        });
+    }
 
     pub fn pack_ack(&mut self, packet: String) -> Vec<u8> {
         let packet_json: AckPacket = self.get_ack_object(packet);
         return self.pack_ack_object(packet_json);
+    }
+
+    pub fn pack_ack_packet(&mut self, sequence : u16) -> Vec<u8> {
+        return self.pack_ack_object(AckPacket {
+            sequence,
+            error: None,
+        });
     }
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {

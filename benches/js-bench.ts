@@ -141,8 +141,20 @@ bench("Pack Session Request", () => {
   soeProtocol.pack_session_request(sessionRequestToPack);
 });
 
+bench("Pack Session Request DIRECT ACCESS", () => {
+  soeProtocol.pack_session_request_packet(1008176227,3,512,"LoginUdp_9");
+});
+const mdddrrr = JSON.parse(sessionRequestToPack)
+bench("Pack Session Request JS", () => {
+  soeProtocol.pack_session_request_fromjs(mdddrrr);
+});
+
 bench("Pack Session Reply", () => {
   soeProtocol.pack_session_reply(sessionReplyToPack);
+});
+
+bench("Pack Session Reply DIRECT ACCESS", () => {
+  soeProtocol.pack_session_reply_packet(1008176227,0,2,256,512);
 });
 
 bench("Pack Ping", () => {
@@ -153,8 +165,16 @@ bench("Pack Out of order packet", () => {
   soeProtocol.pack_out_of_order(outOfOrderPacketToPack);
 });
 
+bench("Pack Out of order DIRECT ACCESS", () => {
+  soeProtocol.pack_out_of_order_packet(1);
+});
+
 bench("Pack Ack packet", () => {
   soeProtocol.pack_ack(ackPacketToPack);
+});
+
+bench("Pack Ack DIRECT ACCESS", () => {
+  soeProtocol.pack_ack_packet(1);
 });
 
 bench("Pack Multi packet", () => {
@@ -165,8 +185,16 @@ bench("Pack Data packet", () => {
   soeProtocol.pack_data(dataPacketToPack);
 });
 
+bench("Pack Data DIRECT ACCESS", () => {
+  soeProtocol.pack_data_packet(new Uint8Array([2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]),0);
+});
+
 bench("Pack Data Fragment packet", () => {
   soeProtocol.pack_data(dataFragmentPacketToPack);
+});
+
+bench("Pack Data Fragment packet DIRECT ACCESS", () => {
+  soeProtocol.pack_fragment_data_packet(new Uint8Array([2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]),0);
 });
 
 console.log("\n Pack tests with stringify \n");

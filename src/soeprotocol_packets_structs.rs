@@ -9,7 +9,7 @@ pub struct SessionRequestPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Clone)]
 pub struct SessionReplyPacket {
     pub session_id: u32,
     pub crc_seed: u32,
