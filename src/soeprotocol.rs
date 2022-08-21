@@ -39,7 +39,7 @@ impl Soeprotocol {
     #[wasm_bindgen(constructor)]
     pub fn initialize(use_crc: bool, crc_seed: u32) -> Soeprotocol {
         let ping_packet = CachedPacket {
-            parsed: json!({"name":"Ping"}).to_string(),
+            parsed: r#"{"name":"Ping"}"#.to_string(),
             packed: vec![0, 6],
         };
         let cached_packets = CachedPackets { ping: ping_packet };
