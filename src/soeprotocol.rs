@@ -190,8 +190,8 @@ impl Soeprotocol {
             self.disable_crc();
         }
         for packet in multi_packet.sub_packets {
-            let packet_json = serde_json::to_string(&packet).unwrap();
-            let mut packet_data = self.pack(packet.name, packet_json);
+            let packet_object = serde_json::to_string(&packet).unwrap();
+            let mut packet_data = self.pack(packet.name, packet_object);
             write_data_length(&mut wtr, packet_data.len());
             wtr.append(&mut packet_data);
         }
@@ -327,8 +327,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_session_reply(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: SessionReplyPacket = self.get_session_reply_object(packet);
-        return self.pack_session_reply_object(packet_json);
+        let packet_object: SessionReplyPacket = self.get_session_reply_object(packet);
+        return self.pack_session_reply_object(packet_object);
     }
 
     pub fn pack_session_reply_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -355,8 +355,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_net_status_request(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: NetStatusRequestPacket = self.get_net_status_request_object(packet);
-        return self.pack_net_status_request_object(packet_json);
+        let packet_object: NetStatusRequestPacket = self.get_net_status_request_object(packet);
+        return self.pack_net_status_request_object(packet_object);
     }
 
     pub fn pack_net_status_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -365,8 +365,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_net_status_reply(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: NetStatusReplyPacket = self.get_net_status_reply_object(packet);
-        return self.pack_net_status_reply_object(packet_json);
+        let packet_object: NetStatusReplyPacket = self.get_net_status_reply_object(packet);
+        return self.pack_net_status_reply_object(packet_object);
     }
 
     pub fn pack_net_status_reply_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -385,8 +385,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_data(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: DataPacket = self.get_data_object(packet);
-        return self.pack_data_object(packet_json);
+        let packet_object: DataPacket = self.get_data_object(packet);
+        return self.pack_data_object(packet_object);
     }
 
     pub fn pack_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -403,8 +403,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: DataPacket = self.get_data_object(packet);
-        return self.pack_fragment_data_object(packet_json);
+        let packet_object: DataPacket = self.get_data_object(packet);
+        return self.pack_fragment_data_object(packet_object);
     }
 
     pub fn pack_fragment_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -421,8 +421,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: AckPacket = self.get_ack_object(packet);
-        return self.pack_out_of_order_object(packet_json);
+        let packet_object: AckPacket = self.get_ack_object(packet);
+        return self.pack_out_of_order_object(packet_object);
     }
 
     pub fn pack_out_of_order_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -438,8 +438,8 @@ impl Soeprotocol {
     }
 
     pub fn pack_ack(&mut self, packet: String) -> Vec<u8> {
-        let packet_json: AckPacket = self.get_ack_object(packet);
-        return self.pack_ack_object(packet_json);
+        let packet_object: AckPacket = self.get_ack_object(packet);
+        return self.pack_ack_object(packet_object);
     }
 
     pub fn pack_ack_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
