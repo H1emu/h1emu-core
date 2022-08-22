@@ -179,27 +179,29 @@ impl Soeprotocol {
         });
     }
 
-    pub fn pack_multi_object(&mut self, multi_packet: SubBasePackets) -> Vec<u8> {
-        if multi_packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
+    pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
         let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(0x03).unwrap();
+        wtr.write_u16::<BigEndian>(opcode).unwrap();
         let was_crc_enabled = self.is_using_crc();
         if was_crc_enabled {
             self.disable_crc();
         }
-        for packet in multi_packet.sub_packets {
-            let packet_object = serde_json::to_string(&packet).unwrap();
-            let mut packet_data = self.pack(packet.name, packet_object);
-            write_data_length(&mut wtr, packet_data.len());
-            wtr.append(&mut packet_data);
+        for packet in packets {
+            write_data_length(&mut wtr, packet.len());
+            wtr.append(&mut packet.clone());
         }
         if was_crc_enabled {
             self.enable_crc();
             append_crc(&mut wtr, self.get_crc_seed())
         }
         return wtr;
+    }
+
+    pub fn pack_multi_object(&mut self, multi_packet: SubBasePackets) -> Vec<u8> {
+        if multi_packet.error.is_some() {
+            return gen_deserializing_error_json();
+        }
+        return self.group_packets(0x03, multi_packet.sub_packets);
     }
 
     pub fn get_data_object(&mut self, packet_string: String) -> DataPacket {
@@ -1063,15 +1065,18 @@ mod tests {
     #[test]
     fn multi_pack_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
-        let data_to_pack:String = r#"{"sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_to_pack:String = r#"{"sub_packets":[[0, 21, 0, 1],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+        71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
+        169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
+        247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
         assert_eq!(
             data_pack,
             [
-                0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+                0, 3, 4, 0, 21, 0, 1, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
                 71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
                 169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
-                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
+                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246
             ]
         )
     }
@@ -1079,7 +1084,10 @@ mod tests {
     #[test]
     fn multi_pack_test_deserializing_error() {
         let mut soeprotocol_class = Soeprotocol::initialize(false, 0);
-        let data_to_pack:String = r#"{"sub_packets":[{"sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_to_pack:String = r#"{"sub_packzts":[[4, 0, 21, 0, 206],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+        71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
+        169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
+        247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
@@ -1087,16 +1095,18 @@ mod tests {
     #[test]
     fn multi_pack_with_crc_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);
-        let data_to_pack:String = r#"{"sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#.to_owned();
+        let data_to_pack:String = r#"{"sub_packets":[[0, 21, 0, 1],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+        71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
+        169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
+        247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
         assert_eq!(
             data_pack,
             [
-                0, 3, 4, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+                0, 3, 4, 0, 21, 0, 1, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
                 71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
                 169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
-                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
-                10, 27
+                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246 , 160, 48
             ]
         )
     }
