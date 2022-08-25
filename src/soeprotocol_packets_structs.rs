@@ -85,7 +85,7 @@ pub struct SubBasePacket {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SubBasePackets {
-    pub sub_packets: Vec<SubBasePacket>,
+    pub sub_packets: Vec<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
