@@ -192,10 +192,12 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     let ping_to_pack: String = r#"{"name":"Ping"}"#.to_owned();
     let outoforder_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
     let ack_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
-    let multi_to_pack:String = r#"{"sub_packets":[[0, 21, 0, 1],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
+    let multi_to_pack: String =
+        r#"{"sub_packets":[[0, 21, 0, 1],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
     71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
     169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
-    247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
+    247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#
+            .to_owned();
     let data_to_pack =
         r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
     let data_fragment_to_pack =
