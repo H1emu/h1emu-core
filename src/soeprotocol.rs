@@ -197,6 +197,13 @@ impl Soeprotocol {
         return wtr;
     }
 
+    pub fn pack_group_object(&mut self, group_packet: SubBasePackets) -> Vec<u8> {
+        if group_packet.error.is_some() {
+            return gen_deserializing_error_json();
+        }
+        return self.group_packets(0x19, group_packet.sub_packets);
+    }
+
     pub fn pack_multi_object(&mut self, multi_packet: SubBasePackets) -> Vec<u8> {
         if multi_packet.error.is_some() {
             return gen_deserializing_error_json();
@@ -384,6 +391,16 @@ impl Soeprotocol {
     pub fn pack_multi_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
         let packet: SubBasePackets = js_object.into_serde().unwrap();
         return self.pack_multi_object(packet);
+    }
+
+    pub fn pack_group(&mut self, packet: String) -> Vec<u8> {
+        let group_packets: SubBasePackets = self.get_multi_object(packet);
+        return self.pack_group_object(group_packets);
+    }
+
+    pub fn pack_group_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
+        let packet: SubBasePackets = js_object.into_serde().unwrap();
+        return self.pack_group_object(packet);
     }
 
     pub fn pack_data(&mut self, packet: String) -> Vec<u8> {
