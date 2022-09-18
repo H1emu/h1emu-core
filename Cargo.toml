@@ -1,6 +1,6 @@
 [package]
 name = "h1emu-core"
-version = "0.9.1"
+version = "0.9.2"
 edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"
@@ -19,13 +19,12 @@ full = ["game-utils","soeprotocol","jenkins","rc4","crc"]
 
 
 [dependencies]
-wasm-bindgen = { version = "0.2.82", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2.83", features = ["serde-serialize"] }
 getrandom = { version = "0.2.7", features = ["js"], optional = true }
 rand = { version = "0.8.5", optional = true }
 byteorder = { version = "1.4.3", optional = true } 
-wee_alloc = "0.4.5"
-serde_json = {version = "1.0.83", optional = true}
-serde = { version = "1.0.143", features = ["derive"], optional = true }
+serde_json = {version = "1.0.85", optional = true}
+serde = { version = "1.0.144", features = ["derive"], optional = true }
 
 
 
