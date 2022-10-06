@@ -32,19 +32,18 @@ impl RC4 {
     }
 
     #[wasm_bindgen]
-    pub fn encrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
-        let mut new_data: Vec<u8> = data;
-        for k in 0..new_data.len() {
+    pub fn encrypt(&mut self, mut data: Vec<u8>) -> Vec<u8> {
+        for k in 0..data.len() {
             self.i = self.i.wrapping_add(1);
             self.j = self.j.wrapping_add(self.s[self.i as usize]);
 
             self.s.swap(self.i as usize, self.j as usize);
             let si = self.s[self.i as usize];
             let sj = self.s[self.j as usize];
-            new_data[k] = new_data[k] ^ self.s[si.wrapping_add(sj) as usize];
+            data[k] = data[k] ^ self.s[si.wrapping_add(sj) as usize];
         }
 
-        return new_data;
+        return data;
     }
 
     #[wasm_bindgen]
