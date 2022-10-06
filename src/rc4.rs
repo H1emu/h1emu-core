@@ -35,11 +35,13 @@ impl RC4 {
     pub fn encrypt(&mut self, mut data: Vec<u8>) -> Vec<u8> {
         for k in 0..data.len() {
             self.i = self.i.wrapping_add(1);
-            self.j = self.j.wrapping_add(self.s[self.i as usize]);
+            let i = self.i as usize;
+            self.j = self.j.wrapping_add(self.s[i]);
+            let j = self.j as usize;
 
-            self.s.swap(self.i as usize, self.j as usize);
-            let si = self.s[self.i as usize];
-            let sj = self.s[self.j as usize];
+            self.s.swap(i, j);
+            let si = self.s[i];
+            let sj = self.s[j];
             data[k] = data[k] ^ self.s[si.wrapping_add(sj) as usize];
         }
 
