@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct RC4 {
-    s: Vec<u8>,
+    s: [u8; 256],
     i: u8,
     j: u8,
 }
@@ -12,7 +12,7 @@ impl RC4 {
     #[wasm_bindgen(constructor)]
     pub fn initialize(given_key: Vec<u8>) -> RC4 {
         let mut rc4 = RC4 {
-            s: vec![0; 256],
+            s: [0; 256],
             i: 0,
             j: 0,
         };
