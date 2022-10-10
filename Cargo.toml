@@ -23,8 +23,8 @@ wasm-bindgen = { version = "0.2.83" }
 getrandom = { version = "0.2.7", features = ["js"], optional = true }
 rand = { version = "0.8.5", optional = true }
 byteorder = { version = "1.4.3", optional = true } 
-serde_json = {version = "1.0.85", optional = true}
-serde = { version = "1.0.144", features = ["derive"], optional = true }
+serde_json = {version = "1.0.86", optional = true}
+serde = { version = "1.0.145", features = ["derive"], optional = true }
 gloo-utils = "0.1.5"
 
 
