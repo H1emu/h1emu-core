@@ -531,7 +531,7 @@ impl Soeprotocol {
     }
 
     fn parse_disconnect(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        if rdr.get_ref().len() != PacketsMinSize::Disconnect as usize {
+        if rdr.get_ref().len() < PacketsMinSize::Disconnect as usize {
             return gen_size_error_json(rdr);
         }
         let session_id = rdr.read_u32::<BigEndian>().unwrap();
