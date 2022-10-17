@@ -5,10 +5,10 @@ use super::{
     soeprotocol_packets_structs::*,
 };
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use gloo_utils::format::JsValueSerdeExt;
 use serde_json::*;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
-use gloo_utils::format::JsValueSerdeExt;
 
 pub struct CachedPacket {
     parsed: String,
