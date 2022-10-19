@@ -477,9 +477,7 @@ impl Soeprotocol {
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
         if data.len() < 2 {
-            return format!(
-                r#"{{"name":"Unknown","raw":{:?}}}"#,
-                data);
+            return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
         let opcode = rdr.read_u16::<BigEndian>().unwrap();
 
@@ -495,9 +493,7 @@ impl Soeprotocol {
             0x0d => self.parse_data(rdr, opcode),
             0x11 => self.parse_ack(rdr, opcode),
             0x15 => self.parse_ack(rdr, opcode),
-            _ => format!(
-                r#"{{"name":"Unknown","raw":{:?}}}"#,
-                data)
+            _ => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
         };
     }
     fn parse_session_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
