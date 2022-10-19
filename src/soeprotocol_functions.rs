@@ -23,24 +23,15 @@ pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc
 }
 
 pub fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-    return json!({
-        "name": "Error",
-        "error": "size",
-        "size": rdr.get_ref().len(),
-        "raw": rdr.get_ref().to_vec()
-    })
-    .to_string();
+    return format!(
+        r#"{{"name":"Error","error":"size","size":{},"raw":{:?}}}"#,
+        rdr.get_ref().len(),rdr.get_ref().to_vec());
 }
 
 pub fn gen_crc_error_json(vec: &Vec<u8>, expected_crc: u16, given_crc: u16) -> String {
-    return json!({
-        "name": "Error",
-        "error": "crc",
-        "expected_crc": expected_crc,
-        "given_crc": given_crc,
-        "raw": vec
-    })
-    .to_string();
+    return format!(
+        r#"{{"name":"Error","error":"crc","expected_crc":{},"given_crc":{},"raw":{:?}}}"#,
+        expected_crc,given_crc,vec);
 }
 
 pub fn gen_corruption_error_json(
@@ -48,15 +39,9 @@ pub fn gen_corruption_error_json(
     subpacket_length: u32,
     data_end: u64,
 ) -> String {
-    return json!({
-        "name": "Error",
-        "error": "corruption",
-        "subpacket_length": subpacket_length,
-        "data_end": data_end,
-        "position": rdr.position() as usize,
-        "raw": rdr.get_ref().to_vec()
-    })
-    .to_string();
+    return format!(
+        r#"{{"name":"Error","error":"corruption","subpacket_length":{},"data_end":{},"position":{},"raw":{:?}}}"#,
+        subpacket_length,data_end,rdr.position() as usize,rdr.get_ref().to_vec());
 }
 
 pub fn disconnect_reason_to_string(reason_id: u16) -> String {
