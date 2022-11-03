@@ -1,7 +1,6 @@
 use super::crc::append_crc;
 use super::soeprotocol_packets_structs::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use serde_json::*;
 use std::io::Cursor;
 
 pub enum PacketsMinSize {

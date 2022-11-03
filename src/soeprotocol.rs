@@ -6,7 +6,6 @@ use super::{
 };
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use gloo_utils::format::JsValueSerdeExt;
-use serde_json::*;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -704,7 +703,7 @@ impl Soeprotocol {
 
 #[cfg(test)]
 mod tests {
-
+    use serde_json::*;
     use super::*;
     #[test]
     fn session_request_parse_test() {
