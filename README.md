@@ -1,4 +1,4 @@
-# h1emu-core
+# h1emu-core [![npm version](http://img.shields.io/npm/v/h1emu-core.svg?style=flat)](https://npmjs.org/package/h1emu-core "View this project on npm")
 
 Utility library used in h1emu.
 
