@@ -520,7 +520,7 @@ impl Soeprotocol {
 
     fn parse_disconnect(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if rdr.get_ref().len() < PacketsMinSize::Disconnect as usize {
-            return gen_size_error_json(rdr);
+            return format!(r#"{{"name":"Disconnect" ,"session_id":null,"reason":"unknown"}}"#);
         }
         let session_id = rdr.read_u32::<BigEndian>().unwrap();
         let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap());
