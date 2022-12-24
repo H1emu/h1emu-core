@@ -111,18 +111,33 @@ impl Soeprotocol {
         }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x07).unwrap();
-        self.wtr.write_u16::<BigEndian>(packet.client_tick_count)
+        self.wtr
+            .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.last_client_update)
+        self.wtr
+            .write_u32::<BigEndian>(packet.last_client_update)
             .unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.average_update).unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.shortest_update).unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.longest_update).unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.last_server_update)
+        self.wtr
+            .write_u32::<BigEndian>(packet.average_update)
             .unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.packets_sent).unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.packets_received).unwrap();
-        self.wtr.write_u16::<BigEndian>(packet.unknown_field).unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.shortest_update)
+            .unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.longest_update)
+            .unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.last_server_update)
+            .unwrap();
+        self.wtr
+            .write_u64::<BigEndian>(packet.packets_sent)
+            .unwrap();
+        self.wtr
+            .write_u64::<BigEndian>(packet.packets_received)
+            .unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.unknown_field)
+            .unwrap();
         return self.wtr.clone();
     }
 
@@ -147,19 +162,27 @@ impl Soeprotocol {
         }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x08).unwrap();
-        self.wtr.write_u16::<BigEndian>(packet.client_tick_count)
+        self.wtr
+            .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap();
-            self.wtr.write_u32::<BigEndian>(packet.server_tick_count)
+        self.wtr
+            .write_u32::<BigEndian>(packet.server_tick_count)
             .unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.client_packet_sent)
+        self.wtr
+            .write_u64::<BigEndian>(packet.client_packet_sent)
             .unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.client_packet_received)
+        self.wtr
+            .write_u64::<BigEndian>(packet.client_packet_received)
             .unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.server_packet_sent)
+        self.wtr
+            .write_u64::<BigEndian>(packet.server_packet_sent)
             .unwrap();
-            self.wtr.write_u64::<BigEndian>(packet.server_packet_received)
+        self.wtr
+            .write_u64::<BigEndian>(packet.server_packet_received)
             .unwrap();
-            self.wtr.write_u16::<BigEndian>(packet.unknown_field).unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.unknown_field)
+            .unwrap();
         return self.wtr.clone();
     }
 
