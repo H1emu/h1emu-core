@@ -1,4 +1,5 @@
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use gloo_utils::format::JsValueSerdeExt;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -11,9 +12,9 @@ pub struct GatewayProtocol {
     wtr: Vec<u8>,
 }
 
-// #[wasm_bindgen]
+#[wasm_bindgen]
 impl GatewayProtocol {
-    // #[wasm_bindgen(constructor)]
+    #[wasm_bindgen(constructor)]
     pub fn initialize() -> GatewayProtocol {
         return GatewayProtocol { wtr: vec![] };
     }
@@ -22,7 +23,7 @@ impl GatewayProtocol {
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
-        let opcode = rdr.read_u16::<BigEndian>().unwrap();
+        let opcode = rdr.read_u8().unwrap();
 
         return match opcode {
             0x01 => self.parse_login_request(rdr),
@@ -44,25 +45,14 @@ impl GatewayProtocol {
         client_protocol: String,
         client_build: String,
     ) -> Vec<u8> {
-        todo!();
+        return self.pack_login_request_object(LoginRequestPacket {
+            character_id,
+            ticket,
+            client_protocol,
+            client_build,
+            error: None,
+        });
     }
-
-    pub fn pack_login_request_object(&mut self, packet: LoginRequestPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
-        self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x01).unwrap();
-        self.wtr
-            .write_u64::<BigEndian>(packet.character_id)
-            .unwrap();
-        self.wtr
-            .write_u32::<BigEndian>(packet.ticket.len() as u32)
-            .unwrap();
-        // TODO: WIP
-        return self.wtr.clone();
-    }
-
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
         todo!();
     }
@@ -83,11 +73,27 @@ impl GatewayProtocol {
         let rdr_clone = rdr.clone();
         let raw_data = rdr_clone.into_inner();
         let ticket_data_pos = rdr.position();
-        let ticket_data_len = rdr.read_u32::<BigEndian>().unwrap();
+        let ticket_data_len = rdr.read_u32::<LittleEndian>().unwrap();
         let ticket = read_prefixed_string_le(raw_data, ticket_data_pos as usize, ticket_data_len);
+        rdr.set_position(ticket_data_pos + ticket_data_len as u64 + 4);
+        let client_protocol_data_pos = rdr.position();
+        let client_protocol_data_len = rdr.read_u32::<LittleEndian>().unwrap();
+        let client_protocol = read_prefixed_string_le(
+            raw_data,
+            client_protocol_data_pos as usize,
+            client_protocol_data_len,
+        );
+        rdr.set_position(client_protocol_data_pos + client_protocol_data_len as u64 + 4);
+        let client_build_data_pos = rdr.position();
+        let client_build_data_len = rdr.read_u32::<LittleEndian>().unwrap();
+        let client_build = read_prefixed_string_le(
+            raw_data,
+            client_build_data_pos as usize,
+            client_build_data_len,
+        );
         return format!(
-            r#"{{"name":"LoginRequest","characterId":{},"ticket":{}"}}"#,
-            character_id, ticket
+            r#"{{"name":"LoginRequest","character_id":{},"ticket":"{}","client_protocol":"{}","client_build":"{}"}}"#,
+            character_id, ticket, client_protocol, client_build
         );
     }
     fn parse_login_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
@@ -101,5 +107,40 @@ impl GatewayProtocol {
     }
     fn parse_channel_is_not_routable(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         todo!();
+    }
+
+    pub fn pack_login_request_object(&mut self, packet: LoginRequestPacket) -> Vec<u8> {
+        if packet.error.is_some() {
+            return gen_deserializing_error_json();
+        }
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(0x01).unwrap();
+        self.wtr
+            .write_u64::<BigEndian>(packet.character_id)
+            .unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.ticket.len() as u32)
+            .unwrap();
+        // TODO: WIP
+        return self.wtr.clone();
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::*;
+    #[test]
+    fn login_request_parse_test() {
+        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let data_to_parse: [u8; 59] = [
+            1, 244, 221, 253, 245, 153, 56, 150, 124, 5, 0, 0, 0, 105, 116, 115, 109, 101, 19, 0,
+            0, 0, 67, 108, 105, 101, 110, 116, 80, 114, 111, 116, 111, 99, 111, 108, 95, 49, 48,
+            56, 48, 14, 0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
+        ];
+        let data_parsed: Value =
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesfull_data_string = r#"{"name":"LoginRequest","character_id":17644538146386908796,"ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
+        let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
+        assert_eq!(data_parsed, succesful_data)
     }
 }
