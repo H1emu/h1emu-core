@@ -23,7 +23,7 @@ impl GatewayProtocol {
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
-        let opcode = rdr.read_u8().unwrap();
+        let opcode = rdr.read_u8().unwrap() & 0x1f;
 
         return match opcode {
             0x01 => self.parse_login_request(rdr),
@@ -100,7 +100,20 @@ impl GatewayProtocol {
         todo!();
     }
     fn parse_tunnel_data(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        todo!();
+        rdr.set_position(0);
+        let flags = rdr.read_u8().unwrap() >> 5;
+        let tunnel_data = rdr.remaining_slice();
+        let mut tunnel_data_string: String = format!(
+            r#"{{"name":"TunnelPacketFromExternalConnection","flags":{},"tunnel_data":["#,
+            flags
+        );
+        for byte in tunnel_data {
+            tunnel_data_string.push_str(&byte.to_string());
+            tunnel_data_string.push_str(&",".to_owned());
+        }
+        tunnel_data_string.remove(tunnel_data_string.len() - 1);
+        tunnel_data_string.push_str(&"]}".to_owned());
+        return tunnel_data_string;
     }
     fn parse_channel_is_routable(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         todo!();
@@ -140,6 +153,20 @@ mod tests {
         let data_parsed: Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesfull_data_string = r#"{"name":"LoginRequest","character_id":17644538146386908796,"ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
+        let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
+        assert_eq!(data_parsed, succesful_data)
+    }
+    #[test]
+    fn tunnel_data_parse_test() {
+        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let data_to_parse: [u8; 32] = [
+            70, 254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
+            0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
+        ];
+        let data_parsed: Value =
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesfull_data_string = r#"{"name":"TunnelPacketFromExternalConnection","flags":2,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
+            0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
         let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
