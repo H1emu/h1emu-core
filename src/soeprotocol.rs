@@ -1,4 +1,4 @@
-use crate::protocol_errors::{
+use super::protocol_errors::{
     gen_corruption_error_json, gen_crc_error_json, gen_deserializing_error_json,
     gen_size_error_json,
 };

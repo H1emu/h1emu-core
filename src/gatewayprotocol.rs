@@ -3,9 +3,9 @@ use gloo_utils::format::JsValueSerdeExt;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
-use crate::gatewayprotocol_packets_structs::*;
-use crate::lib_utils::read_prefixed_string_le;
-use crate::protocol_errors::gen_deserializing_error_json;
+use super::gatewayprotocol_packets_structs::*;
+use super::lib_utils::read_prefixed_string_le;
+use super::protocol_errors::gen_deserializing_error_json;
 
 #[wasm_bindgen]
 pub struct GatewayProtocol {
@@ -30,8 +30,8 @@ impl GatewayProtocol {
             0x02 => self.parse_login_reply(rdr),
             0x03 => r#"{"name":"Logout"}"#.to_string(),
             0x04 => r#"{"name":"ForceDisconnect"}"#.to_string(),
-            0x05 => self.parse_tunnel_data(rdr),
-            0x06 => self.parse_tunnel_data(rdr),
+            0x05 => self.parse_tunnel_data(data),
+            0x06 => self.parse_tunnel_data(data),
             0x07 => self.parse_channel_is_routable(rdr),
             0x08 => self.parse_channel_is_not_routable(rdr),
             _ => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
@@ -56,8 +56,13 @@ impl GatewayProtocol {
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
         todo!();
     }
-    pub fn pack_tunnel_data_packet(&mut self) -> Vec<u8> {
-        todo!();
+    pub fn pack_tunnel_data_packet(&mut self, mut data: Vec<u8>) -> Vec<u8> {
+        // TODO: add opcode channel calculation
+        let opcode = 0x05;
+        let mut tunnel_data: Vec<u8> = vec![];
+        tunnel_data.push(opcode);
+        tunnel_data.append(&mut data);
+        return tunnel_data;
     }
     pub fn pack_channel_is_routable_packet(&mut self) -> Vec<u8> {
         todo!();
@@ -99,21 +104,15 @@ impl GatewayProtocol {
     fn parse_login_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         todo!();
     }
-    fn parse_tunnel_data(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        rdr.set_position(0);
-        let flags = rdr.read_u8().unwrap() >> 5;
-        let tunnel_data = rdr.remaining_slice();
-        let mut tunnel_data_string: String = format!(
-            r#"{{"name":"TunnelPacketFromExternalConnection","flags":{},"tunnel_data":["#,
-            flags
-        );
-        for byte in tunnel_data {
-            tunnel_data_string.push_str(&byte.to_string());
-            tunnel_data_string.push_str(&",".to_owned());
-        }
-        tunnel_data_string.remove(tunnel_data_string.len() - 1);
-        tunnel_data_string.push_str(&"]}".to_owned());
-        return tunnel_data_string;
+    fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
+        let flags = data.remove(0) >> 5;
+        let tunnel_data = data;
+        let packet = TunnelPacket {
+            name: "TunnelPacketFromExternalConnection",
+            flags,
+            tunnel_data,
+        };
+        serde_json::to_string(&packet).unwrap()
     }
     fn parse_channel_is_routable(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         todo!();
@@ -169,5 +168,13 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
         let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
+    }
+    #[test]
+    fn tunnel_data_pack_test() {
+        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let tunnel_data_to_pack = [68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0];
+        let data_pack: Vec<u8> =
+            gatewayprotocol_class.pack_tunnel_data_packet(tunnel_data_to_pack.to_vec());
+        assert_eq!(data_pack, [5, 68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0])
     }
 }

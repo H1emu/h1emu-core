@@ -1,4 +1,3 @@
-#![feature(cursor_remaining)]
 #[cfg(feature = "crc")]
 pub mod crc;
 #[cfg(feature = "crc")]

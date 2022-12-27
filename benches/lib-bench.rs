@@ -3,6 +3,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 #[path = "../src/lib.rs"]
 mod lib;
 use lib::crc::*;
+use lib::gatewayprotocol::*;
+use lib::gatewayprotocol_packets_structs::*;
 use lib::jenkins::*;
 use lib::rc4::*;
 use lib::soeprotocol::*;
@@ -341,6 +343,36 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
         })
     });
 }
+fn gatewayprotocol_parse_benchmarks(c: &mut Criterion) {
+    let mut gatewayprotocol = GatewayProtocol::initialize();
+    // define data used in benchmarks
+    let login_request_to_parse: [u8; 59] = [
+        1, 244, 221, 253, 245, 153, 56, 150, 124, 5, 0, 0, 0, 105, 116, 115, 109, 101, 19, 0, 0, 0,
+        67, 108, 105, 101, 110, 116, 80, 114, 111, 116, 111, 99, 111, 108, 95, 49, 48, 56, 48, 14,
+        0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
+    ];
+
+    let tunnel_data_to_parse: [u8; 32] = [
+        70, 254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0, 0,
+        0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
+    ];
+
+    c.bench_function("login_request_parse", |b| {
+        b.iter(|| gatewayprotocol.parse(black_box(login_request_to_parse.to_vec())))
+    });
+    c.bench_function("tunnel_data_parse", |b| {
+        b.iter(|| gatewayprotocol.parse(black_box(tunnel_data_to_parse.to_vec())))
+    });
+}
+fn gatewayprotocol_pack_benchmarks(c: &mut Criterion) {
+    let mut gatewayprotocol = GatewayProtocol::initialize();
+    // define data used in benchmarks
+    let tunnel_data_to_pack = [68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0];
+
+    c.bench_function("tunnel_data_pack", |b| {
+        b.iter(|| gatewayprotocol.pack_tunnel_data_packet(black_box(tunnel_data_to_pack.to_vec())))
+    });
+}
 
 fn crc_legacy_benchmark(c: &mut Criterion) {
     let data: [u8; 24] = [
@@ -420,14 +452,16 @@ fn rc4_benchmark(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    crc_legacy_benchmark(c);
-    crc_benchmark(c);
-    utils_benchmark(c);
-    jooat_benchmark(c);
-    rc4_benchmark(c);
-    soeprotocol_parse_benchmarks(c);
-    soeprotocol_pack_benchmarks(c);
-    soeprotocol_utils_benchmarks(c);
+    // crc_legacy_benchmark(c);
+    // crc_benchmark(c);
+    // utils_benchmark(c);
+    // jooat_benchmark(c);
+    // rc4_benchmark(c);
+    // soeprotocol_parse_benchmarks(c);
+    // soeprotocol_pack_benchmarks(c);
+    // soeprotocol_utils_benchmarks(c);
+    gatewayprotocol_parse_benchmarks(c);
+    gatewayprotocol_pack_benchmarks(c);
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -22,3 +22,10 @@ pub struct ChannelIsRoutablePacket {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
+
+#[derive(Serialize)]
+pub struct TunnelPacket {
+    pub name: &'static str,
+    pub flags: u8,
+    pub tunnel_data: Vec<u8>,
+}
