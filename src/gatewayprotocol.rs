@@ -53,19 +53,18 @@ impl GatewayProtocol {
         });
     }
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
-        let opcode = 0x02;
-        self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
-        self.wtr.write_u8(logged_in as u8).unwrap();
-        return self.wtr.clone();
+        return self.pack_login_reply_object(LoginReplyPacket {
+            logged_in,
+            error: None,
+        });
     }
     pub fn pack_tunnel_data_packet(&mut self, mut data: Vec<u8>) -> Vec<u8> {
         // TODO: add opcode channel calculation
         let opcode = 0x05;
-        let mut tunnel_data: Vec<u8> = vec![];
-        tunnel_data.push(opcode);
-        tunnel_data.append(&mut data);
-        return tunnel_data;
+        self.wtr.clear();
+        self.wtr.write_u8(opcode).unwrap();
+        self.wtr.append(&mut data);
+        return self.wtr.clone();
     }
     pub fn pack_channel_is_routable_packet(&mut self) -> Vec<u8> {
         todo!();
@@ -139,6 +138,13 @@ impl GatewayProtocol {
         // TODO: WIP
         return self.wtr.clone();
     }
+
+    pub fn pack_login_reply_object(&mut self, packet: LoginReplyPacket) -> Vec<u8> {
+        self.wtr.clear();
+        self.wtr.write_u8(0x02).unwrap();
+        self.wtr.write_u8(packet.logged_in as u8).unwrap();
+        return self.wtr.clone();
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -184,6 +190,6 @@ mod tests {
     fn login_reply_pack_test() {
         let mut gatewayprotocol_class = GatewayProtocol::initialize();
         let data_pack: Vec<u8> = gatewayprotocol_class.pack_login_reply_packet(true);
-        assert_eq!(data_pack, [0, 2, 1])
+        assert_eq!(data_pack, [2, 1])
     }
 }
