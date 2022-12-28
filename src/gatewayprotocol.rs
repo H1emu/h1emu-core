@@ -1,5 +1,4 @@
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use gloo_utils::format::JsValueSerdeExt;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -54,7 +53,11 @@ impl GatewayProtocol {
         });
     }
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
-        todo!();
+        let opcode = 0x02;
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
+        self.wtr.write_u8(logged_in as u8).unwrap();
+        return self.wtr.clone();
     }
     pub fn pack_tunnel_data_packet(&mut self, mut data: Vec<u8>) -> Vec<u8> {
         // TODO: add opcode channel calculation
@@ -176,5 +179,11 @@ mod tests {
         let data_pack: Vec<u8> =
             gatewayprotocol_class.pack_tunnel_data_packet(tunnel_data_to_pack.to_vec());
         assert_eq!(data_pack, [5, 68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0])
+    }
+    #[test]
+    fn login_reply_pack_test() {
+        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let data_pack: Vec<u8> = gatewayprotocol_class.pack_login_reply_packet(true);
+        assert_eq!(data_pack, [0, 2, 1])
     }
 }

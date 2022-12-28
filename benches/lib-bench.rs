@@ -372,6 +372,9 @@ fn gatewayprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("tunnel_data_pack", |b| {
         b.iter(|| gatewayprotocol.pack_tunnel_data_packet(black_box(tunnel_data_to_pack.to_vec())))
     });
+    c.bench_function("login_reply_pack", |b| {
+        b.iter(|| gatewayprotocol.pack_login_reply_packet(black_box(true)))
+    });
 }
 
 fn crc_legacy_benchmark(c: &mut Criterion) {
@@ -460,7 +463,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     // soeprotocol_parse_benchmarks(c);
     // soeprotocol_pack_benchmarks(c);
     // soeprotocol_utils_benchmarks(c);
-    gatewayprotocol_parse_benchmarks(c);
+    // gatewayprotocol_parse_benchmarks(c);
     gatewayprotocol_pack_benchmarks(c);
 }
 

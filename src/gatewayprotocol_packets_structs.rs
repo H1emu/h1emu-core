@@ -24,6 +24,7 @@ pub struct ChannelIsRoutablePacket {
 }
 
 #[derive(Serialize)]
+// Internal
 pub struct TunnelPacket {
     pub name: &'static str,
     pub flags: u8,
