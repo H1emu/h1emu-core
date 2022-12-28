@@ -1,3 +1,8 @@
+use super::protocol_errors::{
+    gen_corruption_error_json, gen_crc_error_json, gen_deserializing_error_json,
+    gen_size_error_json,
+};
+
 use super::soeprotocol_functions::*;
 use super::{
     crc::{append_crc, crc32},
@@ -9,20 +14,11 @@ use gloo_utils::format::JsValueSerdeExt;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
-pub struct CachedPacket {
-    parsed: String,
-    packed: Vec<u8>,
-}
-
-pub struct CachedPackets {
-    ping: CachedPacket,
-}
-
 #[wasm_bindgen]
 pub struct Soeprotocol {
     use_crc: bool,
     crc_seed: u32,
-    cached_packets: CachedPackets,
+    wtr: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -53,15 +49,15 @@ impl Soeprotocol {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(0x01).unwrap();
-        wtr.write_u32::<BigEndian>(packet.crc_length).unwrap();
-        wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
-        wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
-        wtr.append(&mut u8_from_str_nul_utf8_unchecked(
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(0x01).unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.crc_length).unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
+        self.wtr.append(&mut u8_from_str_nul_utf8_unchecked(
             packet.protocol.as_str(),
         ));
-        return wtr;
+        return self.wtr.clone();
     }
 
     pub fn get_session_reply_object(&mut self, packet_string: String) -> SessionReplyPacket {
@@ -81,15 +77,17 @@ impl Soeprotocol {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(0x02).unwrap();
-        wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
-        wtr.write_u32::<BigEndian>(packet.crc_seed).unwrap();
-        wtr.write_u8(packet.crc_length).unwrap();
-        wtr.write_u16::<BigEndian>(packet.encrypt_method).unwrap();
-        wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
-        wtr.write_u32::<BigEndian>(3).unwrap();
-        return wtr;
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(0x02).unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.crc_seed).unwrap();
+        self.wtr.write_u8(packet.crc_length).unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.encrypt_method)
+            .unwrap();
+        self.wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
+        self.wtr.write_u32::<BigEndian>(3).unwrap();
+        return self.wtr.clone();
     }
 
     pub fn get_net_status_request_object(
@@ -116,21 +114,36 @@ impl Soeprotocol {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(0x07).unwrap();
-        wtr.write_u16::<BigEndian>(packet.client_tick_count)
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(0x07).unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap();
-        wtr.write_u32::<BigEndian>(packet.last_client_update)
+        self.wtr
+            .write_u32::<BigEndian>(packet.last_client_update)
             .unwrap();
-        wtr.write_u32::<BigEndian>(packet.average_update).unwrap();
-        wtr.write_u32::<BigEndian>(packet.shortest_update).unwrap();
-        wtr.write_u32::<BigEndian>(packet.longest_update).unwrap();
-        wtr.write_u32::<BigEndian>(packet.last_server_update)
+        self.wtr
+            .write_u32::<BigEndian>(packet.average_update)
             .unwrap();
-        wtr.write_u64::<BigEndian>(packet.packets_sent).unwrap();
-        wtr.write_u64::<BigEndian>(packet.packets_received).unwrap();
-        wtr.write_u16::<BigEndian>(packet.unknown_field).unwrap();
-        return wtr;
+        self.wtr
+            .write_u32::<BigEndian>(packet.shortest_update)
+            .unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.longest_update)
+            .unwrap();
+        self.wtr
+            .write_u32::<BigEndian>(packet.last_server_update)
+            .unwrap();
+        self.wtr
+            .write_u64::<BigEndian>(packet.packets_sent)
+            .unwrap();
+        self.wtr
+            .write_u64::<BigEndian>(packet.packets_received)
+            .unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.unknown_field)
+            .unwrap();
+        return self.wtr.clone();
     }
 
     pub fn get_net_status_reply_object(&mut self, packet_string: String) -> NetStatusReplyPacket {
@@ -152,22 +165,30 @@ impl Soeprotocol {
         if packet.error.is_some() {
             return gen_deserializing_error_json();
         }
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(0x08).unwrap();
-        wtr.write_u16::<BigEndian>(packet.client_tick_count)
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(0x08).unwrap();
+        self.wtr
+            .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap();
-        wtr.write_u32::<BigEndian>(packet.server_tick_count)
+        self.wtr
+            .write_u32::<BigEndian>(packet.server_tick_count)
             .unwrap();
-        wtr.write_u64::<BigEndian>(packet.client_packet_sent)
+        self.wtr
+            .write_u64::<BigEndian>(packet.client_packet_sent)
             .unwrap();
-        wtr.write_u64::<BigEndian>(packet.client_packet_received)
+        self.wtr
+            .write_u64::<BigEndian>(packet.client_packet_received)
             .unwrap();
-        wtr.write_u64::<BigEndian>(packet.server_packet_sent)
+        self.wtr
+            .write_u64::<BigEndian>(packet.server_packet_sent)
             .unwrap();
-        wtr.write_u64::<BigEndian>(packet.server_packet_received)
+        self.wtr
+            .write_u64::<BigEndian>(packet.server_packet_received)
             .unwrap();
-        wtr.write_u16::<BigEndian>(packet.unknown_field).unwrap();
-        return wtr;
+        self.wtr
+            .write_u16::<BigEndian>(packet.unknown_field)
+            .unwrap();
+        return self.wtr.clone();
     }
 
     pub fn get_multi_object(&mut self, packet_string: String) -> SubBasePackets {
@@ -180,21 +201,21 @@ impl Soeprotocol {
     }
 
     pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(opcode).unwrap();
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
         let was_crc_enabled = self.is_using_crc();
         if was_crc_enabled {
             self.disable_crc();
         }
         for packet in packets {
-            write_data_length(&mut wtr, packet.len());
-            wtr.append(&mut packet.clone());
+            write_data_length(&mut self.wtr, packet.len());
+            self.wtr.append(&mut packet.clone());
         }
         if was_crc_enabled {
-            self.enable_crc();
-            append_crc(&mut wtr, self.get_crc_seed())
+            let crc_seed = self.get_crc_seed();
+            append_crc(&mut self.wtr, crc_seed)
         }
-        return wtr;
+        return self.wtr.clone();
     }
 
     pub fn pack_group_object(&mut self, group_packet: SubBasePackets) -> Vec<u8> {
@@ -222,10 +243,10 @@ impl Soeprotocol {
     }
 
     fn _pack_data_object(&mut self, opcode: u16, mut packet: DataPacket) -> Vec<u8> {
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(opcode).unwrap();
-        write_packet_data(&mut wtr, &mut packet, self.crc_seed, self.use_crc);
-        return wtr;
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
+        write_packet_data(&mut self.wtr, &mut packet, self.crc_seed, self.use_crc);
+        return self.wtr.clone();
     }
 
     pub fn pack_data_object(&mut self, packet: DataPacket) -> Vec<u8> {
@@ -252,13 +273,14 @@ impl Soeprotocol {
     }
 
     fn _pack_ack_object(&mut self, opcode: u16, sequence: u16) -> Vec<u8> {
-        let mut wtr = vec![];
-        wtr.write_u16::<BigEndian>(opcode).unwrap();
-        wtr.write_u16::<BigEndian>(sequence).unwrap();
+        self.wtr.clear();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
+        self.wtr.write_u16::<BigEndian>(sequence).unwrap();
         if self.use_crc {
-            append_crc(&mut wtr, self.crc_seed);
+            let crc_seed = self.get_crc_seed();
+            append_crc(&mut self.wtr, crc_seed);
         }
-        return wtr;
+        return self.wtr.clone();
     }
 
     pub fn pack_out_of_order_object(&mut self, packet: AckPacket) -> Vec<u8> {
@@ -281,31 +303,26 @@ impl Soeprotocol {
     // wasm lib
     #[wasm_bindgen(constructor)]
     pub fn initialize(use_crc: bool, crc_seed: u32) -> Soeprotocol {
-        let ping_packet = CachedPacket {
-            parsed: r#"{"name":"Ping"}"#.to_string(),
-            packed: vec![0, 6],
-        };
-        let cached_packets = CachedPackets { ping: ping_packet };
         return Soeprotocol {
             use_crc,
             crc_seed,
-            cached_packets,
+            wtr: vec![],
         };
     }
     pub fn pack(&mut self, packet_name: String, packet: String) -> Vec<u8> {
         match packet_name.as_str() {
-            "SessionRequest" => return self.pack_session_request(packet),
-            "SessionReply" => return self.pack_session_reply(packet),
-            "MultiPacket" => return self.pack_multi(packet),
-            "Disconnect" => return vec![0, 5],
-            "Ping" => self.cached_packets.ping.packed.to_owned(),
-            "NetStatusRequest" => return self.pack_net_status_request(packet),
-            "NetStatusReply" => return self.pack_net_status_reply(packet),
-            "Data" => return self.pack_data(packet),
-            "DataFragment" => return self.pack_fragment_data(packet),
-            "OutOfOrder" => return self.pack_out_of_order(packet),
-            "Ack" => return self.pack_ack(packet),
-            _ => return vec![],
+            "SessionRequest" => self.pack_session_request(packet),
+            "SessionReply" => self.pack_session_reply(packet),
+            "MultiPacket" => self.pack_multi(packet),
+            "Disconnect" => vec![0, 5],
+            "Ping" => vec![0, 6],
+            "NetStatusRequest" => self.pack_net_status_request(packet),
+            "NetStatusReply" => self.pack_net_status_reply(packet),
+            "Data" => self.pack_data(packet),
+            "DataFragment" => self.pack_fragment_data(packet),
+            "OutOfOrder" => self.pack_out_of_order(packet),
+            "Ack" => self.pack_ack(packet),
+            _ => vec![],
         }
     }
 
@@ -485,7 +502,7 @@ impl Soeprotocol {
             0x02 => self.parse_session_reply(rdr),
             0x03 => self.parse_multi(rdr),
             0x05 => self.parse_disconnect(rdr),
-            0x06 => self.cached_packets.ping.parsed.to_owned(),
+            0x06 => r#"{"name":"Ping"}"#.to_string(),
             0x07 => self.parse_net_status_request(rdr),
             0x08 => self.parse_net_status_reply(rdr),
             0x09 => self.parse_data(rdr, opcode),
@@ -531,7 +548,7 @@ impl Soeprotocol {
 
     fn parse_disconnect(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if rdr.get_ref().len() < PacketsMinSize::Disconnect as usize {
-            return gen_size_error_json(rdr);
+            return format!(r#"{{"name":"Disconnect" ,"session_id":null,"reason":"unknown"}}"#);
         }
         let session_id = rdr.read_u32::<BigEndian>().unwrap();
         let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap());
@@ -703,8 +720,8 @@ impl Soeprotocol {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::*;
     use super::*;
+    use serde_json::*;
     #[test]
     fn session_request_parse_test() {
         let mut soeprotocol_class = Soeprotocol::initialize(true, 0);

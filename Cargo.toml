@@ -11,11 +11,13 @@ readme="README.md"
 [features]
 default = ["full"]
 game-utils = ["rand","getrandom"]
-soeprotocol = ["crc","serde","serde_json","byteorder"]
+soeprotocol = ["crc","serde","serde_json","byteorder","protocols"]
+gatewayprotocol =  ["serde","serde_json","byteorder","protocols"]
+protocols=  ["serde","serde_json","byteorder"]
 crc = ["byteorder"]
 rc4 = []
 jenkins = []
-full = ["game-utils","soeprotocol","jenkins","rc4","crc"]
+full = ["game-utils","soeprotocol","gatewayprotocol","protocols","jenkins","rc4","crc"]
 
 
 [dependencies]

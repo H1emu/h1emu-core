@@ -21,35 +21,6 @@ pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc
     }
 }
 
-pub fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-    return format!(
-        r#"{{"name":"Error","error":"size","size":{},"raw":{:?}}}"#,
-        rdr.get_ref().len(),
-        rdr.get_ref().to_vec()
-    );
-}
-
-pub fn gen_crc_error_json(vec: &Vec<u8>, expected_crc: u16, given_crc: u16) -> String {
-    return format!(
-        r#"{{"name":"Error","error":"crc","expected_crc":{},"given_crc":{},"raw":{:?}}}"#,
-        expected_crc, given_crc, vec
-    );
-}
-
-pub fn gen_corruption_error_json(
-    rdr: Cursor<&std::vec::Vec<u8>>,
-    subpacket_length: u32,
-    data_end: u64,
-) -> String {
-    return format!(
-        r#"{{"name":"Error","error":"corruption","subpacket_length":{},"data_end":{},"position":{},"raw":{:?}}}"#,
-        subpacket_length,
-        data_end,
-        rdr.position() as usize,
-        rdr.get_ref().to_vec()
-    );
-}
-
 pub fn disconnect_reason_to_string(reason_id: u16) -> String {
     match reason_id {
         0 => "DisconnectReasonIcmpError".to_string(),
@@ -114,16 +85,6 @@ pub fn extract_subpacket_data(
     return full_data_vec[data_start_position as usize
         ..(data_start_position + sub_packet_data_length as u64) as usize]
         .to_vec();
-}
-
-pub fn gen_deserializing_error_json() -> Vec<u8> {
-    return vec![]; // maybe encoding a null string with error log would be better
-                   /* return json!({
-                       "name": "Error",
-                       "error": "deserializing",
-                       "raw": packet
-                   })
-                   .to_string();*/
 }
 
 pub fn write_packet_data(
