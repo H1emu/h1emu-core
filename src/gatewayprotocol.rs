@@ -76,9 +76,8 @@ impl GatewayProtocol {
 
 impl GatewayProtocol {
     fn parse_login_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        let character_id = rdr.read_u64::<BigEndian>().unwrap();
-        let rdr_clone = rdr.clone();
-        let raw_data = rdr_clone.into_inner();
+        let character_id = rdr.read_u64::<LittleEndian>().unwrap();
+        let raw_data = rdr.clone().into_inner();
         let ticket_data_pos = rdr.position();
         let ticket_data_len = rdr.read_u32::<LittleEndian>().unwrap();
         let ticket = read_prefixed_string_le(raw_data, ticket_data_pos as usize, ticket_data_len);
@@ -99,7 +98,7 @@ impl GatewayProtocol {
             client_build_data_len,
         );
         return format!(
-            r#"{{"name":"LoginRequest","character_id":{},"ticket":"{}","client_protocol":"{}","client_build":"{}"}}"#,
+            r#"{{"name":"LoginRequest","character_id":"0x{:x}","ticket":"{}","client_protocol":"{}","client_build":"{}"}}"#,
             character_id, ticket, client_protocol, client_build
         );
     }
@@ -160,7 +159,7 @@ mod tests {
         ];
         let data_parsed: Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesfull_data_string = r#"{"name":"LoginRequest","character_id":17644538146386908796,"ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
+        let succesfull_data_string = r#"{"name":"LoginRequest","character_id":"0x7c963899f5fdddf4","ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
         let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
