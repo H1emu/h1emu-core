@@ -16,11 +16,11 @@ pub fn u8_from_str_nul_utf8_unchecked(data: &str) -> Vec<u8> {
         data_u8.push(b as u8);
     }
     data_u8.push(0);
-    return data_u8;
+    data_u8
 }
 
 pub fn read_prefixed_string_le(buffer: &Vec<u8>, offset: usize, length: u32) -> String {
     let string_bytes = &buffer[offset + 4..offset + 4 + length as usize];
-    let s = String::from_utf8(string_bytes.to_vec()).unwrap();
-    return s;
+
+    String::from_utf8(string_bytes.to_vec()).unwrap()
 }

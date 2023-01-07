@@ -46,13 +46,13 @@ pub fn disconnect_reason_to_string(reason_id: u16) -> String {
 
 pub fn get_data_end(rdr: &Cursor<&std::vec::Vec<u8>>, use_crc: bool) -> u64 {
     if use_crc {
-        return (rdr.get_ref().len() as u64) - 2 as u64;
+        return (rdr.get_ref().len() as u64) - 2_u64;
     } else {
         return rdr.get_ref().len() as u64;
     };
 }
 
-pub fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) -> () {
+pub fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) {
     if data_length <= 0xFF {
         wtr.write_u8(data_length as u8).unwrap();
     } else if data_length <= 0xFFFF {
@@ -70,10 +70,10 @@ pub fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u32 {
         data_length = rdr.read_u16::<BigEndian>().unwrap() as u32;
         if data_length > 0xFFFF {
             rdr.set_position(initial_rdr_position);
-            data_length = rdr.read_u32::<BigEndian>().unwrap() as u32;
+            data_length = rdr.read_u32::<BigEndian>().unwrap();
         }
     }
-    return data_length;
+    data_length
 }
 
 pub fn extract_subpacket_data(
@@ -82,9 +82,9 @@ pub fn extract_subpacket_data(
     sub_packet_data_length: u32,
 ) -> Vec<u8> {
     let full_data_vec = rdr.get_ref().to_vec();
-    return full_data_vec[data_start_position as usize
+    full_data_vec[data_start_position as usize
         ..(data_start_position + sub_packet_data_length as u64) as usize]
-        .to_vec();
+        .to_vec()
 }
 
 pub fn write_packet_data(
@@ -92,7 +92,7 @@ pub fn write_packet_data(
     data_packet: &mut DataPacket,
     crc_seed: u32,
     use_crc: bool,
-) -> () {
+) {
     wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap();
     wtr.append(&mut data_packet.data);
     if use_crc {
@@ -103,7 +103,6 @@ pub fn write_packet_data(
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     #[test]
     fn write_packet_data_test() {
         let data_to_pack: Vec<u8> = [
@@ -111,12 +110,12 @@ mod tests {
         ]
         .to_vec();
         let mut wtr = vec![];
-        let mut data_packet = DataPacket {
+        let mut data_packet = super::DataPacket {
             data: data_to_pack,
             sequence: 0,
             error: None,
         };
-        write_packet_data(&mut wtr, &mut data_packet, 0, false);
+        super::write_packet_data(&mut wtr, &mut data_packet, 0, false);
         assert_eq!(
             wtr,
             [0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0].to_vec()
@@ -130,12 +129,12 @@ mod tests {
         ]
         .to_vec();
         let mut wtr = vec![];
-        let mut data_packet = DataPacket {
+        let mut data_packet = super::DataPacket {
             data: data_to_pack,
             sequence: 0,
             error: None,
         };
-        write_packet_data(&mut wtr, &mut data_packet, 0, true);
+        super::write_packet_data(&mut wtr, &mut data_packet, 0, true);
         assert_eq!(
             wtr,
             [0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0, 9, 51].to_vec()

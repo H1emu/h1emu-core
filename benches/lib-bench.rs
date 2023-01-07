@@ -4,7 +4,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 mod lib;
 use lib::crc::*;
 use lib::gatewayprotocol::*;
-use lib::gatewayprotocol_packets_structs::*;
+
 use lib::jenkins::*;
 use lib::rc4::*;
 use lib::soeprotocol::*;
@@ -17,7 +17,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
         2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
     ]
     .to_vec();
-    let mut wtr = vec![];
+    let wtr = vec![];
     let mut data_packet = DataPacket {
         data: data_to_pack,
         sequence: 0,
@@ -38,7 +38,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
         2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
     ]
     .to_vec();
-    let mut wtr = vec![];
+    let wtr = vec![];
     let mut data_packet = DataPacket {
         data: data_to_pack,
         sequence: 0,
@@ -397,7 +397,7 @@ fn crc_legacy_benchmark(c: &mut Criterion) {
 }
 
 fn crc_benchmark(c: &mut Criterion) {
-    let mut data: Vec<u8> = [
+    let data: Vec<u8> = [
         0, 9, 0, 0, 0, 169, 183, 185, 67, 241, 64, 164, 5, 143, 19, 35, 87, 21, 163, 205, 26, 83,
         24, 212,
     ]
@@ -414,9 +414,7 @@ fn crc_benchmark(c: &mut Criterion) {
 }
 
 fn utils_benchmark(c: &mut Criterion) {
-    c.bench_function("generate_random_guid", |b| {
-        b.iter(|| generate_random_guid())
-    });
+    c.bench_function("generate_random_guid", |b| b.iter(generate_random_guid));
 
     c.bench_function("eul2quat", |b| {
         b.iter(|| eul2quat([1.0, 2.0, 3.0].to_vec()))

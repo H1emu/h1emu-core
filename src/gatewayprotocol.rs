@@ -15,7 +15,7 @@ pub struct GatewayProtocol {
 impl GatewayProtocol {
     #[wasm_bindgen(constructor)]
     pub fn initialize() -> GatewayProtocol {
-        return GatewayProtocol { wtr: vec![] };
+        GatewayProtocol { wtr: vec![] }
     }
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
@@ -44,25 +44,25 @@ impl GatewayProtocol {
         client_protocol: String,
         client_build: String,
     ) -> Vec<u8> {
-        return self.pack_login_request_object(LoginRequestPacket {
+        self.pack_login_request_object(LoginRequestPacket {
             character_id,
             ticket,
             client_protocol,
             client_build,
             error: None,
-        });
+        })
     }
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
-        return self.pack_login_reply_object(LoginReplyPacket {
+        self.pack_login_reply_object(LoginReplyPacket {
             logged_in,
             error: None,
-        });
+        })
     }
     pub fn pack_tunnel_data_packet_for_client(&mut self, data: Vec<u8>) -> Vec<u8> {
-        return self._pack_tunnel_data_packet(0x05, data);
+        self._pack_tunnel_data_packet(0x05, data)
     }
     pub fn pack_tunnel_data_packet_for_server(&mut self, data: Vec<u8>) -> Vec<u8> {
-        return self._pack_tunnel_data_packet(0x06, data);
+        self._pack_tunnel_data_packet(0x06, data)
     }
     fn _pack_tunnel_data_packet(&mut self, base_opcode: u8, mut data: Vec<u8>) -> Vec<u8> {
         // TODO: add opcode channel calculation
@@ -70,19 +70,19 @@ impl GatewayProtocol {
         self.wtr.clear();
         self.wtr.write_u8(opcode).unwrap();
         self.wtr.append(&mut data);
-        return self.wtr.clone();
+        self.wtr.clone()
     }
     pub fn pack_channel_is_routable_packet(&mut self) -> Vec<u8> {
         let opcode = 0x07;
         self.wtr.clear();
         self.wtr.write_u8(opcode).unwrap();
-        return self.wtr.clone();
+        self.wtr.clone()
     }
     pub fn pack_channel_is_not_routable_packet(&mut self) -> Vec<u8> {
         let opcode = 0x08;
         self.wtr.clear();
         self.wtr.write_u8(opcode).unwrap();
-        return self.wtr.clone();
+        self.wtr.clone()
     }
 }
 
@@ -109,14 +109,14 @@ impl GatewayProtocol {
             client_build_data_pos as usize,
             client_build_data_len,
         );
-        return format!(
+        format!(
             r#"{{"name":"LoginRequest","character_id":"0x{:x}","ticket":"{}","client_protocol":"{}","client_build":"{}"}}"#,
             character_id, ticket, client_protocol, client_build
-        );
+        )
     }
     fn parse_login_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         let logged_in = rdr.read_u8().unwrap();
-        return format!(r#"{{"name":"LoginReply","logged_in":{}}}"#, logged_in);
+        format!(r#"{{"name":"LoginReply","logged_in":{}}}"#, logged_in)
     }
     fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
         let flags = data.remove(0) >> 5;
@@ -129,10 +129,10 @@ impl GatewayProtocol {
         serde_json::to_string(&packet).unwrap()
     }
     fn parse_channel_is_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        return r#"{"name":"ChannelIsRoutable"}"#.to_string();
+        r#"{"name":"ChannelIsRoutable"}"#.to_string()
     }
     fn parse_channel_is_not_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        return r#"{"name":"ChannelIsNotRoutable"}"#.to_string();
+        r#"{"name":"ChannelIsNotRoutable"}"#.to_string()
     }
 
     pub fn pack_login_request_object(&mut self, packet: LoginRequestPacket) -> Vec<u8> {
@@ -148,51 +148,52 @@ impl GatewayProtocol {
             .write_u32::<BigEndian>(packet.ticket.len() as u32)
             .unwrap();
         // TODO: WIP
-        return self.wtr.clone();
+        self.wtr.clone()
     }
 
     pub fn pack_login_reply_object(&mut self, packet: LoginReplyPacket) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u8(0x02).unwrap();
         self.wtr.write_u8(packet.logged_in as u8).unwrap();
-        return self.wtr.clone();
+        self.wtr.clone()
     }
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde_json::*;
+
     #[test]
     fn login_request_parse_test() {
-        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_to_parse: [u8; 59] = [
             1, 244, 221, 253, 245, 153, 56, 150, 124, 5, 0, 0, 0, 105, 116, 115, 109, 101, 19, 0,
             0, 0, 67, 108, 105, 101, 110, 116, 80, 114, 111, 116, 111, 99, 111, 108, 95, 49, 48,
             56, 48, 14, 0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
         ];
-        let data_parsed: Value =
+        let data_parsed: serde_json::Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesfull_data_string = r#"{"name":"LoginRequest","character_id":"0x7c963899f5fdddf4","ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
-        let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
     fn tunnel_data_parse_test() {
-        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_to_parse: [u8; 32] = [
             70, 254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
         ];
-        let data_parsed: Value =
+        let data_parsed: serde_json::Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesfull_data_string = r#"{"name":"TunnelPacket","flags":2,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
-        let succesful_data: Value = serde_json::from_str(succesfull_data_string).unwrap();
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
     fn tunnel_data_pack_test() {
-        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let tunnel_data_to_pack = [68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0];
         let data_pack: Vec<u8> =
             gatewayprotocol_class.pack_tunnel_data_packet_for_client(tunnel_data_to_pack.to_vec());
@@ -200,7 +201,7 @@ mod tests {
     }
     #[test]
     fn login_reply_pack_test() {
-        let mut gatewayprotocol_class = GatewayProtocol::initialize();
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_pack: Vec<u8> = gatewayprotocol_class.pack_login_reply_packet(true);
         assert_eq!(data_pack, [2, 1])
     }

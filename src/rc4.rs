@@ -28,7 +28,7 @@ impl RC4 {
                 .wrapping_add(rc4.s[k as usize]);
             rc4.s.swap(k.into(), l as usize);
         }
-        return rc4;
+        rc4
     }
 
     #[wasm_bindgen]
@@ -42,27 +42,27 @@ impl RC4 {
             self.s.swap(i, j);
             let si = self.s[i];
             let sj = self.s[j];
-            data[k] = data[k] ^ self.s[si.wrapping_add(sj) as usize];
+            data[k] ^= self.s[si.wrapping_add(sj) as usize];
         }
 
-        return data;
+        data
     }
 
     #[wasm_bindgen]
     pub fn decrypt(&mut self, data: Vec<u8>) -> Vec<u8> {
-        return self.encrypt(data);
+        self.encrypt(data)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     #[test]
     fn rc4_create_key() {
         let key: [u8; 16] = [
             23, 189, 8, 107, 27, 148, 240, 47, 240, 236, 83, 215, 99, 88, 155, 95,
         ];
-        let rc4_obj = RC4::initialize(key.to_vec());
+        let rc4_obj = super::RC4::initialize(key.to_vec());
         assert_eq!(
             rc4_obj.s,
             [
@@ -93,7 +93,7 @@ mod tests {
             5, 1, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 2, 1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0,
             0, 116, 101, 115, 116,
         ];
-        let mut rc4_obj = RC4::initialize(key.to_vec());
+        let mut rc4_obj = super::RC4::initialize(key.to_vec());
         let data_result = rc4_obj.encrypt(data.to_vec());
         assert_eq!(
             data_result,

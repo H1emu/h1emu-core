@@ -6,9 +6,9 @@ pub fn generate_random_guid() -> String {
 
     let mut str_bytes = vec![0u8; 16];
 
-    const ASCII_ZERO: u8 = '0' as u8;
-    const ASCII_NINE: u8 = '9' as u8;
-    const ASCII_NUMBERS_LETTERS_OFFSET: u8 = 'a' as u8 - '9' as u8 - 1;
+    const ASCII_ZERO: u8 = b'0';
+    const ASCII_NINE: u8 = b'9';
+    const ASCII_NUMBERS_LETTERS_OFFSET: u8 = b'a' - b'9' - 1;
 
     for i in 0..8 {
         let mut leading = random[i] / 16 + ASCII_ZERO;
@@ -42,7 +42,7 @@ pub fn eul2quat(angle: Vec<f32>) -> Vec<f32> {
     let qy = s1 * c2 * c3 + c1 * s2 * s3;
     let qz = c1c2 * s3 + s1s2 * c3;
     let qx = c1 * s2 * c3 - s1 * c2 * s3;
-    return [qx, qy, -qz, qw].to_vec();
+    [qx, qy, -qz, qw].to_vec()
 }
 
 #[wasm_bindgen]
@@ -52,22 +52,22 @@ pub fn is_pos_in_radius(radius: f32, player_pos: Vec<f32>, enemi_pos: Vec<f32>) 
     let enemi_x = enemi_pos[0];
     let enemi_z = enemi_pos[2];
 
-    return (player_x - radius <= enemi_x && enemi_x <= player_x + radius)
-        && (player_z - radius <= enemi_z && enemi_z <= player_z + radius);
+    (player_x - radius <= enemi_x && enemi_x <= player_x + radius)
+        && (player_z - radius <= enemi_z && enemi_z <= player_z + radius)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     #[test]
     fn generate_random_guid_test() {
-        assert_ne!(generate_random_guid(), generate_random_guid())
+        assert_ne!(super::generate_random_guid(), super::generate_random_guid())
     }
 
     #[test]
     fn eul2quat_test() {
         assert_eq!(
-            eul2quat([1.0, 2.0, 3.0].to_vec()),
+            super::eul2quat([1.0, 2.0, 3.0].to_vec()),
             [0.31062245, -0.71828705, 0.44443506, 0.43595284].to_vec()
         )
     }
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn is_pos_in_radius_test() {
         assert_eq!(
-            is_pos_in_radius(
+            super::is_pos_in_radius(
                 20.0,
                 [0.0, 1.0, 2.0, 0.0].to_vec(),
                 [-19.0, 1.0, 20.0, 0.0].to_vec()
