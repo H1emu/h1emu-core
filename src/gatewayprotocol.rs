@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -140,14 +140,24 @@ impl GatewayProtocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x01).unwrap();
+        self.wtr.write_u8(0x01).unwrap();
         self.wtr
-            .write_u64::<BigEndian>(packet.character_id)
+            .write_u64::<LittleEndian>(packet.character_id)
             .unwrap();
         self.wtr
-            .write_u32::<BigEndian>(packet.ticket.len() as u32)
+            .write_u32::<LittleEndian>(packet.ticket.len() as u32)
             .unwrap();
-        // TODO: WIP
+        self.wtr.append(&mut packet.ticket.as_bytes().to_vec());
+        self.wtr
+            .write_u32::<LittleEndian>(packet.client_protocol.len() as u32)
+            .unwrap();
+        self.wtr
+            .append(&mut packet.client_protocol.as_bytes().to_vec());
+        self.wtr
+            .write_u32::<LittleEndian>(packet.client_build.len() as u32)
+            .unwrap();
+        self.wtr
+            .append(&mut packet.client_build.as_bytes().to_vec());
         self.wtr.clone()
     }
 
@@ -198,6 +208,22 @@ mod tests {
         let data_pack: Vec<u8> =
             gatewayprotocol_class.pack_tunnel_data_packet_for_client(tunnel_data_to_pack.to_vec());
         assert_eq!(data_pack, [5, 68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0])
+    }
+    #[test]
+    fn login_request_pack_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let right_login_request_packet: [u8; 59] = [
+            1, 244, 221, 253, 245, 153, 56, 150, 124, 5, 0, 0, 0, 105, 116, 115, 109, 101, 19, 0,
+            0, 0, 67, 108, 105, 101, 110, 116, 80, 114, 111, 116, 111, 99, 111, 108, 95, 49, 48,
+            56, 48, 14, 0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
+        ];
+        let data_pack: Vec<u8> = gatewayprotocol_class.pack_login_request_packet(
+            8977425141117869556,
+            "itsme".to_owned(),
+            "ClientProtocol_1080".to_owned(),
+            "0.195.4.147586".to_owned(),
+        );
+        assert_eq!(data_pack, right_login_request_packet)
     }
     #[test]
     fn login_reply_pack_test() {
