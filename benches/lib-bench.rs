@@ -360,6 +360,9 @@ fn gatewayprotocol_parse_benchmarks(c: &mut Criterion) {
     c.bench_function("login_request_parse", |b| {
         b.iter(|| gatewayprotocol.parse(black_box(login_request_to_parse.to_vec())))
     });
+    c.bench_function("login_reply_parse", |b| {
+        b.iter(|| gatewayprotocol.parse(black_box([2, 1].to_vec())))
+    });
     c.bench_function("tunnel_data_parse", |b| {
         b.iter(|| gatewayprotocol.parse(black_box(tunnel_data_to_parse.to_vec())))
     });
@@ -373,6 +376,16 @@ fn gatewayprotocol_pack_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             gatewayprotocol
                 .pack_tunnel_data_packet_for_client(black_box(tunnel_data_to_pack.to_vec()))
+        })
+    });
+    c.bench_function("login_request_pack", |b| {
+        b.iter(|| {
+            gatewayprotocol.pack_login_request_packet(
+                8977425141117869556,
+                "itsme".to_owned(),
+                "ClientProtocol_1080".to_owned(),
+                "0.195.4.147586".to_owned(),
+            )
         })
     });
     c.bench_function("login_reply_pack", |b| {

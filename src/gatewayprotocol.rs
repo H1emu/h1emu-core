@@ -115,7 +115,7 @@ impl GatewayProtocol {
         )
     }
     fn parse_login_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        let logged_in = rdr.read_u8().unwrap();
+        let logged_in: bool = rdr.read_u8().unwrap() != 0; // convert to bool
         format!(r#"{{"name":"LoginReply","logged_in":{}}}"#, logged_in)
     }
     fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
@@ -182,6 +182,17 @@ mod tests {
         let data_parsed: serde_json::Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
         let succesfull_data_string = r#"{"name":"LoginRequest","character_id":"0x7c963899f5fdddf4","ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(succesfull_data_string).unwrap();
+        assert_eq!(data_parsed, succesful_data)
+    }
+    #[test]
+    fn login_reply_parse_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let data_to_parse: [u8; 2] = [2, 1];
+        let data_parsed: serde_json::Value =
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesfull_data_string = r#"{"name":"LoginReply","logged_in":true}"#;
         let succesful_data: serde_json::Value =
             serde_json::from_str(succesfull_data_string).unwrap();
         assert_eq!(data_parsed, succesful_data)
