@@ -24,3 +24,12 @@ pub fn read_prefixed_string_le(buffer: &[u8], offset: usize, length: u32) -> Str
 
     String::from_utf8(string_bytes.to_vec()).unwrap()
 }
+pub fn sat(x: f32) -> f32 {
+    if x < 0.0 {
+        return 0.0;
+    } else if x > 1.0 {
+        return 1.0;
+    } else {
+        return x;
+    }
+}

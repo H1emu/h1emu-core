@@ -20,4 +20,6 @@ pub mod soeprotocol_functions;
 #[cfg(feature = "soeprotocol")]
 pub mod soeprotocol_packets_structs;
 #[cfg(feature = "game-utils")]
+pub mod spatial_hash_grid;
+#[cfg(feature = "game-utils")]
 pub mod utils;
