@@ -35,8 +35,8 @@ impl SpatialHashGrid {
     pub fn new(bounds: Vec<f32>, dimensions: Vec<f32>) -> SpatialHashGrid {
         SpatialHashGrid {
             _bounds: Bounds {
-                x: [*bounds.get(0).unwrap(), *bounds.get(1).unwrap()],
-                y: [*bounds.get(2).unwrap(), *bounds.get(3).unwrap()],
+                x: [bounds[0], bounds[1]],
+                y: [bounds[2], bounds[3]],
             },
             _dimensions: Dimensions {
                 x: *dimensions.get(0).unwrap(),
@@ -48,8 +48,8 @@ impl SpatialHashGrid {
     pub fn create_client(&mut self, position: Vec<f32>, id: u64) -> Vec<u32> {
         let mut client = Client {
             position: TwoDimensionPos {
-                x: position.get(0).unwrap().clone(),
-                y: position.get(1).unwrap().clone(),
+                x: position[0],
+                y: position[1],
             },
             indexes: [[0, 0], [0, 0]],
             id,
@@ -66,8 +66,8 @@ impl SpatialHashGrid {
             id,
             indexes: [[0, 0], [0, 0]],
             position: TwoDimensionPos {
-                x: *position.get(0).unwrap(),
-                y: *position.get(1).unwrap(),
+                x: position[0],
+                y: position[1],
             },
         };
         self._insert(&mut client);
@@ -78,10 +78,7 @@ impl SpatialHashGrid {
     }
 
     pub fn remove(&mut self, indexes: Vec<u32>, id: u64) -> () {
-        let indexes = [
-            [*indexes.get(0).unwrap(), *indexes.get(1).unwrap()],
-            [*indexes.get(2).unwrap(), *indexes.get(3).unwrap()],
-        ];
+        let indexes = [[indexes[0], indexes[1]], [indexes[2], indexes[3]]];
         for x in indexes[0] {
             for y in indexes[1] {
                 let k = self._key(x, y);
@@ -91,8 +88,8 @@ impl SpatialHashGrid {
     }
     pub fn find_nearby(&mut self, full_position: Vec<f32>, radius: f32) -> Vec<u64> {
         let position = TwoDimensionPos {
-            x: *full_position.get(0).unwrap(),
-            y: *full_position.get(1).unwrap(),
+            x: full_position[0],
+            y: full_position[1],
         };
         let i1_calc_x = position.x - radius;
         let i1_calc_y = position.y - radius;
