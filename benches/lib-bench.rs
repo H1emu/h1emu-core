@@ -10,6 +10,7 @@ use lib::rc4::*;
 use lib::soeprotocol::*;
 use lib::soeprotocol_functions::*;
 use lib::soeprotocol_packets_structs::*;
+use lib::spatial_hash_grid::*;
 use lib::utils::*;
 
 fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
@@ -467,6 +468,110 @@ fn rc4_benchmark(c: &mut Criterion) {
         b.iter(|| rc4_obj.encrypt(black_box(data.to_vec())))
     });
 }
+fn spatial_grid_benchmark(c: &mut Criterion) {
+    let dimensions = [100.0, 100.0].to_vec();
+    let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
+    c.bench_function("SpatialGrid::create_client", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let id: u64 = 1;
+        let position = [10.0, 20.0, 3.0].to_vec();
+        b.iter(|| sgrid.create_client(position.clone(), id))
+    });
+    c.bench_function("SpatialGrid::create_clients", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let mut id: u64 = 1;
+        let position = [10.0, 20.0, 3.0].to_vec();
+        b.iter(|| {
+            id += 1;
+            sgrid.create_client(position.clone(), id)
+        })
+    });
+    c.bench_function("SpatialGrid::create_clients on different positions", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let mut id: u64 = 1;
+        let mut position = [10.0, 20.0, 3.0].to_vec();
+        b.iter(|| {
+            id += 1;
+            position[0] += 1.0;
+            if position[0] == 1000.0 {
+                position[0] -= 2000.0;
+            }
+            sgrid.create_client(position.clone(), id)
+        })
+    });
+    c.bench_function(
+        "SpatialGrid::remove_client (contains client creation)",
+        |b| {
+            let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+            let id: u64 = 1;
+            let position = [10.0, 20.0, 3.0].to_vec();
+            b.iter(|| {
+                let idx = sgrid.create_client(position.clone(), id);
+                sgrid.remove(idx, id);
+            })
+        },
+    );
+    c.bench_function("SpatialGrid::find_nearby", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let id: u64 = 1;
+        let position = [10.0, 20.0, 3.0].to_vec();
+        sgrid.create_client(position.clone(), id);
+        b.iter(|| {
+            sgrid.find_nearby(position.clone(), 300.0);
+        })
+    });
+    c.bench_function("SpatialGrid::find_nearby 500 clients", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let position = [10.0, 20.0, 3.0].to_vec();
+        for i in 0..500 {
+            sgrid.create_client(position.clone(), i as u64);
+        }
+        b.iter(|| {
+            sgrid.find_nearby(position.clone(), 300.0);
+        })
+    });
+    c.bench_function(
+        "SpatialGrid::find_nearby 500 clients in diffent positions",
+        |b| {
+            let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+            let mut position = [10.0, 20.0, 3.0].to_vec();
+            for i in 0..500 {
+                position[0] += 1.0;
+                sgrid.create_client(position.clone(), i as u64);
+            }
+            b.iter(|| {
+                sgrid.find_nearby(position.clone(), 300.0);
+            })
+        },
+    );
+    c.bench_function("SpatialGrid::find_nearby 50000 clients", |b| {
+        let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+        let position = [10.0, 20.0, 3.0].to_vec();
+        for i in 0..50000 {
+            sgrid.create_client(position.clone(), i as u64);
+        }
+        b.iter(|| {
+            sgrid.find_nearby(position.clone(), 300.0);
+        })
+    });
+    c.bench_function(
+        "SpatialGrid::find_nearby 50000 clients in diffent positions",
+        |b| {
+            let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
+            let mut position = [10.0, 20.0, 3.0].to_vec();
+            for i in 0..50000 {
+                position[0] += 1.0;
+                if position[0] == 1000.0 {
+                    position[0] -= 2000.0;
+                }
+                sgrid.create_client(position.clone(), i as u64);
+            }
+            b.iter(|| {
+                sgrid.find_nearby(position.clone(), 300.0);
+            })
+        },
+    );
+}
 
 fn criterion_benchmark(c: &mut Criterion) {
     crc_legacy_benchmark(c);
@@ -479,6 +584,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     soeprotocol_utils_benchmarks(c);
     gatewayprotocol_parse_benchmarks(c);
     gatewayprotocol_pack_benchmarks(c);
+    spatial_grid_benchmark(c);
 }
 
 criterion_group!(benches, criterion_benchmark);
