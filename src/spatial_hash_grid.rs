@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use super::lib_utils::sat;
 use wasm_bindgen::prelude::*;
@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 pub struct SpatialHashGrid {
     _bounds: Bounds,
     _dimensions: Dimensions,
-    _cells: HashMap<u32, HashSet<u64>>,
+    _cells: Vec<Vec<HashSet<u64>>>,
 }
 
 pub struct Dimensions {
@@ -33,10 +33,13 @@ pub struct Bounds {
 impl SpatialHashGrid {
     #[wasm_bindgen(constructor)]
     pub fn new(bounds: Vec<f32>, dimensions: Vec<u32>) -> SpatialHashGrid {
-        // let mut t: Vec<HashSet<u64>> = vec![];
-        // for _x in 0..dimensions[0] + dimensions[1] {
-        //     t.push(HashSet::new());
-        // }
+        let mut t: Vec<Vec<HashSet<u64>>> = vec![];
+        for x in 0..dimensions[0] {
+            t.push(vec![]);
+            for _y in 0..dimensions[1] {
+                t[x as usize].push(HashSet::new())
+            }
+        }
         SpatialHashGrid {
             _bounds: Bounds {
                 x: [bounds[0], bounds[1]],
@@ -46,7 +49,7 @@ impl SpatialHashGrid {
                 x: dimensions[0],
                 y: dimensions[1],
             },
-            _cells: HashMap::new(),
+            _cells: t,
         }
     }
     pub fn create_client(&mut self, position: Vec<f32>, id: u64) -> Vec<u32> {
@@ -85,8 +88,7 @@ impl SpatialHashGrid {
         let indexes = [[indexes[0], indexes[1]], [indexes[2], indexes[3]]];
         for x in indexes[0] {
             for y in indexes[1] {
-                let k = self._key(x, y);
-                self._cells.get_mut(&k).unwrap().remove(&id);
+                self._cells[x as usize][y as usize].remove(&id);
             }
         }
     }
@@ -104,12 +106,7 @@ impl SpatialHashGrid {
         let mut clients: HashSet<u64> = HashSet::new();
         for x in i1[0]..i2[0] + 1 {
             for y in i1[1]..i2[1] + 1 {
-                let k = self._key(x, y);
-                if self._cells.contains_key(&k) {
-                    for id in self._cells.get(&k).unwrap() {
-                        clients.insert(*id);
-                    }
-                }
+                clients.extend(self._cells[x as usize][y as usize].clone());
             }
         }
         let v = clients.into_iter().collect();
@@ -117,15 +114,6 @@ impl SpatialHashGrid {
     }
 }
 impl SpatialHashGrid {
-    fn _key(&self, i1: u32, i2: u32) -> u32 {
-        let mut s = String::new();
-        s.push_str(&i1.to_string());
-        s.push_str(".");
-        s.push_str(&i2.to_string());
-        let checksum = super::crc::crc32_legacy(s.as_bytes(), 0);
-        return checksum;
-    }
-
     fn _get_cell_index(&self, position: &[f32; 2]) -> [u32; 2] {
         let x = sat((position[0] - self._bounds.x[0]) / (self._bounds.y[0] - self._bounds.x[0]));
         let y = sat((position[1] - self._bounds.x[1]) / (self._bounds.y[1] - self._bounds.x[1]));
@@ -135,7 +123,7 @@ impl SpatialHashGrid {
         [x_index as u32, y_index as u32]
     }
 
-    pub fn get_cells(&self) -> HashMap<u32, HashSet<u64>> {
+    pub fn get_cells(&self) -> Vec<Vec<HashSet<u64>>> {
         return self._cells.clone();
     }
 
@@ -152,11 +140,7 @@ impl SpatialHashGrid {
 
         for x in i1 {
             for y in i2 {
-                let k = self._key(x, y);
-                if !self._cells.contains_key(&k) {
-                    self._cells.insert(k.clone(), HashSet::new());
-                }
-                self._cells.get_mut(&k).unwrap().insert(client.id.clone());
+                self._cells[x as usize][y as usize].insert(client.id.clone());
             }
         }
     }
@@ -202,10 +186,15 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position, id.clone());
-        let key = sgrid._key(*indexes.get(0).unwrap(), *indexes.get(1).unwrap());
-        assert_eq!(sgrid._cells.contains_key(&key), true);
-        assert_eq!(sgrid._cells.get(&key).unwrap().contains(&id), true);
+        let indexes = sgrid.create_client(position.clone(), id.clone());
+        assert_eq!(
+            sgrid._cells[indexes[0] as usize][indexes[1] as usize].len(),
+            1
+        );
+        assert_eq!(
+            sgrid._cells[indexes[0] as usize][indexes[1] as usize].contains(&id),
+            true
+        );
     }
     #[test]
     fn remove_client() {
@@ -214,10 +203,13 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position, id.clone());
-        let key = sgrid._key(*indexes.get(0).unwrap(), *indexes.get(1).unwrap());
-        sgrid.remove(indexes, id);
-        assert_eq!(sgrid._cells.get(&key).unwrap().contains(&id), false);
+        let indexes = sgrid.create_client(position.clone(), id.clone());
+        sgrid.remove(indexes.clone(), id);
+
+        assert_eq!(
+            sgrid._cells[indexes[0] as usize][indexes[1] as usize].contains(&id),
+            false
+        );
     }
     #[test]
     fn update_client() {
@@ -226,14 +218,18 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [10.0, 20.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position, id.clone());
-        let key = sgrid._key(*indexes.get(0).unwrap(), *indexes.get(1).unwrap());
+        let indexes = sgrid.create_client(position.clone(), id.clone());
         let new_pos = [1.0, 2.0, 3.0].to_vec();
-        let new_indexes = sgrid.update(new_pos, indexes.clone(), id);
-        let key2 = sgrid._key(*new_indexes.get(0).unwrap(), *new_indexes.get(1).unwrap());
+        let new_indexes = sgrid.update(new_pos.clone(), indexes.clone(), id);
         assert_eq!(new_indexes, [49, 49, 49, 49].to_vec());
-        assert_eq!(sgrid._cells.get(&key).unwrap().contains(&id), false);
-        assert_eq!(sgrid._cells.get(&key2).unwrap().contains(&id), true);
+        assert_eq!(
+            sgrid._cells[indexes[0] as usize][indexes[1] as usize].contains(&id),
+            false
+        );
+        assert_eq!(
+            sgrid._cells[new_indexes[0] as usize][new_indexes[1] as usize].contains(&id),
+            true
+        );
     }
     #[test]
     fn nearby_clients() {

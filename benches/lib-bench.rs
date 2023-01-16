@@ -577,16 +577,16 @@ fn spatial_grid_benchmark(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    // crc_legacy_benchmark(c);
-    // crc_benchmark(c);
-    // utils_benchmark(c);
-    // jooat_benchmark(c);
-    // rc4_benchmark(c);
-    // soeprotocol_parse_benchmarks(c);
-    // soeprotocol_pack_benchmarks(c);
-    // soeprotocol_utils_benchmarks(c);
-    // gatewayprotocol_parse_benchmarks(c);
-    // gatewayprotocol_pack_benchmarks(c);
+    crc_legacy_benchmark(c);
+    crc_benchmark(c);
+    utils_benchmark(c);
+    jooat_benchmark(c);
+    rc4_benchmark(c);
+    soeprotocol_parse_benchmarks(c);
+    soeprotocol_pack_benchmarks(c);
+    soeprotocol_utils_benchmarks(c);
+    gatewayprotocol_parse_benchmarks(c);
+    gatewayprotocol_pack_benchmarks(c);
     spatial_grid_benchmark(c);
 }
 
