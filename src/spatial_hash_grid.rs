@@ -10,8 +10,8 @@ pub struct SpatialHashGrid {
 }
 
 pub struct Dimensions {
-    pub x: f32,
-    pub y: f32,
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Clone)]
@@ -32,15 +32,19 @@ pub struct Bounds {
 #[wasm_bindgen]
 impl SpatialHashGrid {
     #[wasm_bindgen(constructor)]
-    pub fn new(bounds: Vec<f32>, dimensions: Vec<f32>) -> SpatialHashGrid {
+    pub fn new(bounds: Vec<f32>, dimensions: Vec<u32>) -> SpatialHashGrid {
+        // let mut t: Vec<HashSet<u64>> = vec![];
+        // for _x in 0..dimensions[0] + dimensions[1] {
+        //     t.push(HashSet::new());
+        // }
         SpatialHashGrid {
             _bounds: Bounds {
                 x: [bounds[0], bounds[1]],
                 y: [bounds[2], bounds[3]],
             },
             _dimensions: Dimensions {
-                x: *dimensions.get(0).unwrap(),
-                y: *dimensions.get(1).unwrap(),
+                x: dimensions[0],
+                y: dimensions[1],
             },
             _cells: HashMap::new(),
         }
@@ -125,8 +129,8 @@ impl SpatialHashGrid {
     fn _get_cell_index(&self, position: &[f32; 2]) -> [u32; 2] {
         let x = sat((position[0] - self._bounds.x[0]) / (self._bounds.y[0] - self._bounds.x[0]));
         let y = sat((position[1] - self._bounds.x[1]) / (self._bounds.y[1] - self._bounds.x[1]));
-        let x_index = f32::floor(x * (self._dimensions.x - 1.0));
-        let y_index = f32::floor(y * (self._dimensions.y - 1.0));
+        let x_index = f32::floor(x * (self._dimensions.x - 1) as f32);
+        let y_index = f32::floor(y * (self._dimensions.y - 1) as f32);
 
         [x_index as u32, y_index as u32]
     }
@@ -162,13 +166,13 @@ mod tests {
 
     #[test]
     fn create_spatial_hash_grid() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         super::SpatialHashGrid::new(bounds, dimensions);
     }
     #[test]
     fn get_cell_index() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let cell_index = sgrid._get_cell_index(&[69.5, 55.4]);
@@ -176,7 +180,7 @@ mod tests {
     }
     #[test]
     fn create_client() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
@@ -184,7 +188,7 @@ mod tests {
     }
     #[test]
     fn get_client_indices() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
@@ -193,7 +197,7 @@ mod tests {
     }
     #[test]
     fn insert() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
@@ -205,7 +209,7 @@ mod tests {
     }
     #[test]
     fn remove_client() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
@@ -217,7 +221,7 @@ mod tests {
     }
     #[test]
     fn update_client() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [10.0, 20.0, 3.0].to_vec();
@@ -233,7 +237,7 @@ mod tests {
     }
     #[test]
     fn nearby_clients() {
-        let dimensions = [100.0, 100.0].to_vec();
+        let dimensions = [100, 100].to_vec();
         let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [10.0, 20.0, 3.0].to_vec();

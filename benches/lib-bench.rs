@@ -469,8 +469,11 @@ fn rc4_benchmark(c: &mut Criterion) {
     });
 }
 fn spatial_grid_benchmark(c: &mut Criterion) {
-    let dimensions = [100.0, 100.0].to_vec();
+    let dimensions = [100, 100].to_vec();
     let bounds = [-1000.0, -1000.0, 1000.0, 1000.0].to_vec();
+    c.bench_function("SpatialGrid::new", |b| {
+        b.iter(|| SpatialHashGrid::new(bounds.clone(), dimensions.clone()))
+    });
     c.bench_function("SpatialGrid::create_client", |b| {
         let mut sgrid = SpatialHashGrid::new(bounds.clone(), dimensions.clone());
         let id: u64 = 1;
@@ -574,16 +577,16 @@ fn spatial_grid_benchmark(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    crc_legacy_benchmark(c);
-    crc_benchmark(c);
-    utils_benchmark(c);
-    jooat_benchmark(c);
-    rc4_benchmark(c);
-    soeprotocol_parse_benchmarks(c);
-    soeprotocol_pack_benchmarks(c);
-    soeprotocol_utils_benchmarks(c);
-    gatewayprotocol_parse_benchmarks(c);
-    gatewayprotocol_pack_benchmarks(c);
+    // crc_legacy_benchmark(c);
+    // crc_benchmark(c);
+    // utils_benchmark(c);
+    // jooat_benchmark(c);
+    // rc4_benchmark(c);
+    // soeprotocol_parse_benchmarks(c);
+    // soeprotocol_pack_benchmarks(c);
+    // soeprotocol_utils_benchmarks(c);
+    // gatewayprotocol_parse_benchmarks(c);
+    // gatewayprotocol_pack_benchmarks(c);
     spatial_grid_benchmark(c);
 }
 
