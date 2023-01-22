@@ -2,6 +2,15 @@
 
 Utility library used in h1emu.
 
+## Features
+
+- Soeprotocol
+- GatewayProtocol
+- Joaat hash
+- RC4 encryption
+- Crc32
+- SpatialHashGrid
+
 ## Build
 
 ### Needed dependencies
@@ -18,7 +27,7 @@ run `wasm-pack build -t nodejs` to build the wasm module in the /pkg folder
 
 ### run unit tests
 
-run `cargo test` to see if your change broke nothing.
+run `cargo test`.
 
 ### run benchmarks
 
