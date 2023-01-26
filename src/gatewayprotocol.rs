@@ -64,12 +64,15 @@ impl GatewayProtocol {
     pub fn pack_tunnel_data_packet_for_server(&mut self, data: Vec<u8>) -> Vec<u8> {
         self._pack_tunnel_data_packet(0x06, data)
     }
-    fn _pack_tunnel_data_packet(&mut self, base_opcode: u8, mut data: Vec<u8>) -> Vec<u8> {
+    fn _pack_tunnel_data_packet(&mut self, base_opcode: u8, data: Vec<u8>) -> Vec<u8> {
         // TODO: add opcode channel calculation
         let opcode = base_opcode;
         self.wtr.clear();
         self.wtr.write_u8(opcode).unwrap();
-        self.wtr.append(&mut data);
+        // TODO: If there is a way to reproduce this issue, we could found a more performant fix
+        // Cloning data to avoid recursive use of an object error
+        let mut data_clone = data.clone();
+        self.wtr.append(&mut data_clone);
         self.wtr.clone()
     }
     pub fn pack_channel_is_routable_packet(&mut self) -> Vec<u8> {
