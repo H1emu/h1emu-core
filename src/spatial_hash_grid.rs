@@ -65,10 +65,10 @@ impl SpatialHashGrid {
         let mut indexes_as_vec: Vec<u32> = vec![];
         indexes_as_vec.append(&mut client.indexes[0].to_vec());
         indexes_as_vec.append(&mut client.indexes[1].to_vec());
-        return indexes_as_vec;
+        indexes_as_vec
     }
     pub fn update(&mut self, position: Vec<f32>, indexes: Vec<u32>, id: u64) -> Vec<u32> {
-        self.remove(indexes, id.clone());
+        self.remove(indexes, id);
         let mut client = Client {
             id,
             indexes: [[0, 0], [0, 0]],
@@ -81,10 +81,10 @@ impl SpatialHashGrid {
         let mut indexes_as_vec: Vec<u32> = vec![];
         indexes_as_vec.append(&mut client.indexes[0].to_vec());
         indexes_as_vec.append(&mut client.indexes[1].to_vec());
-        return indexes_as_vec;
+        indexes_as_vec
     }
 
-    pub fn remove(&mut self, indexes: Vec<u32>, id: u64) -> () {
+    pub fn remove(&mut self, indexes: Vec<u32>, id: u64) {
         let indexes = [[indexes[0], indexes[1]], [indexes[2], indexes[3]]];
         for x in indexes[0] {
             for y in indexes[1] {
@@ -109,8 +109,8 @@ impl SpatialHashGrid {
                 clients.extend(self._cells[x as usize][y as usize].clone());
             }
         }
-        let v = clients.into_iter().collect();
-        return v;
+
+        clients.into_iter().collect()
     }
 }
 impl SpatialHashGrid {
@@ -124,10 +124,10 @@ impl SpatialHashGrid {
     }
 
     pub fn get_cells(&self) -> Vec<Vec<HashSet<u64>>> {
-        return self._cells.clone();
+        self._cells.clone()
     }
 
-    fn _insert(&mut self, client: &mut Client) -> () {
+    fn _insert(&mut self, client: &mut Client) {
         let scale: f32 = 1.0;
         let i1_calc_x = client.position.x - scale / 2.0;
         let i1_calc_y = client.position.y - scale / 2.0;
@@ -140,7 +140,7 @@ impl SpatialHashGrid {
 
         for x in i1 {
             for y in i2 {
-                self._cells[x as usize][y as usize].insert(client.id.clone());
+                self._cells[x as usize][y as usize].insert(client.id);
             }
         }
     }
@@ -186,7 +186,7 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position.clone(), id.clone());
+        let indexes = sgrid.create_client(position, id);
         assert_eq!(
             sgrid._cells[indexes[0] as usize][indexes[1] as usize].len(),
             1
@@ -203,7 +203,7 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [1.0, 2.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position.clone(), id.clone());
+        let indexes = sgrid.create_client(position, id);
         sgrid.remove(indexes.clone(), id);
 
         assert_eq!(
@@ -218,9 +218,9 @@ mod tests {
         let mut sgrid = super::SpatialHashGrid::new(bounds, dimensions);
         let position = [10.0, 20.0, 3.0].to_vec();
         let id = 1;
-        let indexes = sgrid.create_client(position.clone(), id.clone());
+        let indexes = sgrid.create_client(position, id);
         let new_pos = [1.0, 2.0, 3.0].to_vec();
-        let new_indexes = sgrid.update(new_pos.clone(), indexes.clone(), id);
+        let new_indexes = sgrid.update(new_pos, indexes.clone(), id);
         assert_eq!(new_indexes, [49, 49, 49, 49].to_vec());
         assert_eq!(
             sgrid._cells[indexes[0] as usize][indexes[1] as usize].contains(&id),
@@ -239,8 +239,8 @@ mod tests {
         let position = [10.0, 20.0, 3.0].to_vec();
         let id = 5;
         let id2 = 45;
-        sgrid.create_client(position.clone(), id.clone());
-        sgrid.create_client(position, id2.clone());
+        sgrid.create_client(position.clone(), id);
+        sgrid.create_client(position, id2);
         let nearby = sgrid.find_nearby([0.0, 0.0, 0.0, 0.0].to_vec(), 300.0);
         assert_eq!(nearby.len(), 2);
         let mut v: Vec<u64> = vec![];
