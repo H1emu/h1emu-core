@@ -58,15 +58,14 @@ impl GatewayProtocol {
             error: None,
         })
     }
-    pub fn pack_tunnel_data_packet_for_client(&mut self, data: Vec<u8>) -> Vec<u8> {
-        self._pack_tunnel_data_packet(0x05, data)
+    pub fn pack_tunnel_data_packet_for_client(&mut self, data: Vec<u8>, channel: u8) -> Vec<u8> {
+        self._pack_tunnel_data_packet(0x05, data, channel)
     }
-    pub fn pack_tunnel_data_packet_for_server(&mut self, data: Vec<u8>) -> Vec<u8> {
-        self._pack_tunnel_data_packet(0x06, data)
+    pub fn pack_tunnel_data_packet_for_server(&mut self, data: Vec<u8>, channel: u8) -> Vec<u8> {
+        self._pack_tunnel_data_packet(0x06, data, channel)
     }
-    fn _pack_tunnel_data_packet(&mut self, base_opcode: u8, data: Vec<u8>) -> Vec<u8> {
-        // TODO: add opcode channel calculation
-        let opcode = base_opcode;
+    fn _pack_tunnel_data_packet(&mut self, base_opcode: u8, data: Vec<u8>, channel: u8) -> Vec<u8> {
+        let opcode = base_opcode | channel << 5;
         self.wtr.clear();
         self.wtr.write_u8(opcode).unwrap();
         // TODO: If there is a way to reproduce this issue, we could found a more performant fix
@@ -122,20 +121,20 @@ impl GatewayProtocol {
         format!(r#"{{"name":"LoginReply","logged_in":{}}}"#, logged_in)
     }
     fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
-        let flags = data.remove(0) >> 5;
+        let channel = data.remove(0) >> 5;
         let tunnel_data = data;
         let packet = TunnelPacket {
             name: "TunnelPacket",
-            flags,
+            channel,
             tunnel_data,
         };
         serde_json::to_string(&packet).unwrap()
     }
     fn parse_channel_is_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        r#"{"name":"ChannelIsRoutable"}"#.to_string()
+        format!(r#"{{"name":"ChannelIsRoutable","raw":"{:?}"}}"#, _rdr)
     }
     fn parse_channel_is_not_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        r#"{"name":"ChannelIsNotRoutable"}"#.to_string()
+        format!(r#"{{"name":"ChannelIsNotRoutable","raw":"{:?}"}}"#, _rdr)
     }
 
     pub fn pack_login_request_object(&mut self, packet: LoginRequestPacket) -> Vec<u8> {
@@ -209,7 +208,7 @@ mod tests {
         ];
         let data_parsed: serde_json::Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesfull_data_string = r#"{"name":"TunnelPacket","flags":2,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
+        let succesfull_data_string = r#"{"name":"TunnelPacket","channel":2,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
         let succesful_data: serde_json::Value =
             serde_json::from_str(succesfull_data_string).unwrap();
@@ -219,9 +218,17 @@ mod tests {
     fn tunnel_data_pack_test() {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let tunnel_data_to_pack = [68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0];
-        let data_pack: Vec<u8> =
-            gatewayprotocol_class.pack_tunnel_data_packet_for_client(tunnel_data_to_pack.to_vec());
+        let data_pack: Vec<u8> = gatewayprotocol_class
+            .pack_tunnel_data_packet_for_client(tunnel_data_to_pack.to_vec(), 0);
         assert_eq!(data_pack, [5, 68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0])
+    }
+    #[test]
+    fn tunnel_data_pack_channel_1_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let tunnel_data_to_pack = [68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0];
+        let data_pack: Vec<u8> = gatewayprotocol_class
+            .pack_tunnel_data_packet_for_client(tunnel_data_to_pack.to_vec(), 1);
+        assert_eq!(data_pack, [37, 68, 82, 37, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0])
     }
     #[test]
     fn login_request_pack_test() {

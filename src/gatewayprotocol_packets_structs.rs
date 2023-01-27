@@ -27,6 +27,6 @@ pub struct ChannelIsRoutablePacket {
 // Internal
 pub struct TunnelPacket {
     pub name: &'static str,
-    pub flags: u8,
+    pub channel: u8,
     pub tunnel_data: Vec<u8>,
 }

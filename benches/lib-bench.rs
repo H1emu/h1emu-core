@@ -375,8 +375,10 @@ fn gatewayprotocol_pack_benchmarks(c: &mut Criterion) {
 
     c.bench_function("tunnel_data_pack", |b| {
         b.iter(|| {
-            gatewayprotocol
-                .pack_tunnel_data_packet_for_client(black_box(tunnel_data_to_pack.to_vec()))
+            gatewayprotocol.pack_tunnel_data_packet_for_client(
+                black_box(tunnel_data_to_pack.to_vec()),
+                black_box(0),
+            )
         })
     });
     c.bench_function("login_request_pack", |b| {
