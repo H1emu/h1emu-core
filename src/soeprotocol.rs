@@ -503,6 +503,7 @@ impl Soeprotocol {
             0x0d => self.parse_data(rdr, opcode),
             0x11 => self.parse_ack(rdr, opcode),
             0x15 => self.parse_ack(rdr, opcode),
+            0x1D => format!(r#"{{"name":"FatalError","raw":{:?}}}"#, data),
             _ => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
         };
     }
