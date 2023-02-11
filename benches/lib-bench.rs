@@ -431,20 +431,6 @@ fn crc_benchmark(c: &mut Criterion) {
 
 fn utils_benchmark(c: &mut Criterion) {
     c.bench_function("generate_random_guid", |b| b.iter(generate_random_guid));
-
-    c.bench_function("eul2quat", |b| {
-        b.iter(|| eul2quat([1.0, 2.0, 3.0].to_vec()))
-    });
-
-    c.bench_function("is_pos_in_radius", |b| {
-        b.iter(|| {
-            is_pos_in_radius(
-                20.0,
-                [0.0, 1.0, 2.0, 0.0].to_vec(),
-                [-19.0, 1.0, 20.0, 0.0].to_vec(),
-            )
-        })
-    });
 }
 
 fn jooat_benchmark(c: &mut Criterion) {
