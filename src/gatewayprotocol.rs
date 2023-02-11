@@ -252,4 +252,15 @@ mod tests {
         let data_pack: Vec<u8> = gatewayprotocol_class.pack_login_reply_packet(true);
         assert_eq!(data_pack, [2, 1])
     }
+    #[test]
+    fn parsing_fail_0_24_0_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let data: Vec<u8> = [
+            33, 72, 249, 170, 117, 72, 100, 162, 106, 248, 149, 6, 31, 86, 181, 12, 175, 26, 141,
+            46, 129, 174, 4, 102, 176, 167, 115, 131, 253, 188, 124, 226, 94, 250, 196, 53, 54, 99,
+        ]
+        .to_vec();
+        let parsed_data = gatewayprotocol_class.parse(data);
+        assert!(parsed_data.len() > 0)
+    }
 }
