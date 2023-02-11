@@ -22,7 +22,15 @@ impl GatewayProtocol {
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
-        let opcode = rdr.read_u8().unwrap() & 0x1f;
+        let full_opcode = rdr.read_u8().unwrap();
+        let opcode = full_opcode & 0x1f;
+        let channel = full_opcode >> 5;
+        if channel != 0 {
+            return format!(
+                r#"{{"name":"error not a supported channel","channel":{},"raw":{:?}}}"#,
+                channel, data
+            );
+        }
 
         return match opcode {
             0x01 => self.parse_login_request(rdr),
@@ -203,12 +211,12 @@ mod tests {
     fn tunnel_data_parse_test() {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_to_parse: [u8; 32] = [
-            70, 254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
+            5, 254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
         ];
         let data_parsed: serde_json::Value =
             serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesfull_data_string = r#"{"name":"TunnelPacket","channel":2,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
+        let succesfull_data_string = r#"{"name":"TunnelPacket","channel":0,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
         let succesful_data: serde_json::Value =
             serde_json::from_str(succesfull_data_string).unwrap();
