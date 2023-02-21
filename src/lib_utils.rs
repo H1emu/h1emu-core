@@ -20,9 +20,13 @@ pub fn u8_from_str_nul_utf8_unchecked(data: &str) -> Vec<u8> {
 }
 
 pub fn read_prefixed_string_le(buffer: &[u8], offset: usize, length: u32) -> String {
-    let string_bytes = &buffer[offset + 4..offset + 4 + length as usize];
+    if offset + 4 > buffer.len() || offset + 4 + length as usize > buffer.len() {
+        "Fail to read prefixed string little endiant".to_owned()
+    } else {
+        let string_bytes = &buffer[offset + 4..offset + 4 + length as usize];
 
-    String::from_utf8(string_bytes.to_vec()).unwrap()
+        String::from_utf8(string_bytes.to_vec()).unwrap_or_default()
+    }
 }
 pub fn sat(x: f32) -> f32 {
     if x < 0.0 {

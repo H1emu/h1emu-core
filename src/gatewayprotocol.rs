@@ -25,32 +25,22 @@ impl GatewayProtocol {
         let full_opcode = rdr.read_u8().unwrap();
         let opcode = full_opcode & 0x1f;
         let channel = full_opcode >> 5;
-        return match channel {
-            0x00 => match opcode {
-                0x01 => self.parse_login_request(rdr),
-                0x02 => self.parse_login_reply(rdr),
-                0x03 => r#"{"name":"Logout"}"#.to_string(),
-                0x04 => r#"{"name":"ForceDisconnect"}"#.to_string(),
-                0x05 => self.parse_tunnel_data(data),
-                0x06 => self.parse_tunnel_data(data),
-                0x07 => self.parse_channel_is_routable(rdr),
-                0x08 => self.parse_channel_is_not_routable(rdr),
-                _ => format!(
-                    r#"{{"name":"Unknown","channel":{},"raw":{:?}}}"#,
-                    channel, data
-                ),
-            },
-            _ => match opcode {
-                0x03 => r#"{"name":"Logout"}"#.to_string(),
-                0x04 => r#"{"name":"ForceDisconnect"}"#.to_string(),
-                0x05 => self.parse_tunnel_data(data),
-                0x06 => self.parse_tunnel_data(data),
-                _ => format!(
-                    r#"{{"name":"Unknown","channel":{},"raw":{:?}}}"#,
-                    channel, data
-                ),
-            },
+        let parsed_data = match opcode {
+            0x01 => self.parse_login_request(rdr),
+            0x02 => self.parse_login_reply(rdr),
+            0x03 => r#"{"name":"Logout"}"#.to_string(),
+            0x04 => r#"{"name":"ForceDisconnect"}"#.to_string(),
+            0x05 => self.parse_tunnel_data(data),
+            0x06 => self.parse_tunnel_data(data),
+            0x07 => self.parse_channel_is_routable(rdr),
+            0x08 => self.parse_channel_is_not_routable(rdr),
+            _ => format!(
+                r#"{{"name":"Unknown","channel":{},"raw":{:?}}}"#,
+                channel, data
+            ),
         };
+
+        return parsed_data;
     }
 
     pub fn pack_login_request_packet(
@@ -111,11 +101,11 @@ impl GatewayProtocol {
         let character_id = rdr.read_u64::<LittleEndian>().unwrap();
         let raw_data = rdr.clone().into_inner();
         let ticket_data_pos = rdr.position();
-        let ticket_data_len = rdr.read_u32::<LittleEndian>().unwrap();
+        let ticket_data_len = rdr.read_u32::<LittleEndian>().unwrap_or_default();
         let ticket = read_prefixed_string_le(raw_data, ticket_data_pos as usize, ticket_data_len);
         rdr.set_position(ticket_data_pos + ticket_data_len as u64 + 4);
         let client_protocol_data_pos = rdr.position();
-        let client_protocol_data_len = rdr.read_u32::<LittleEndian>().unwrap();
+        let client_protocol_data_len = rdr.read_u32::<LittleEndian>().unwrap_or_default();
         let client_protocol = read_prefixed_string_le(
             raw_data,
             client_protocol_data_pos as usize,
@@ -123,7 +113,7 @@ impl GatewayProtocol {
         );
         rdr.set_position(client_protocol_data_pos + client_protocol_data_len as u64 + 4);
         let client_build_data_pos = rdr.position();
-        let client_build_data_len = rdr.read_u32::<LittleEndian>().unwrap();
+        let client_build_data_len = rdr.read_u32::<LittleEndian>().unwrap_or_default();
         let client_build = read_prefixed_string_le(
             raw_data,
             client_build_data_pos as usize,
