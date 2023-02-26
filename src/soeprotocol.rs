@@ -209,7 +209,8 @@ impl Soeprotocol {
         }
         if was_crc_enabled {
             let crc_seed = self.get_crc_seed();
-            append_crc(&mut self.wtr, crc_seed)
+            append_crc(&mut self.wtr, crc_seed);
+            self.enable_crc();
         }
         self.wtr.clone()
     }
