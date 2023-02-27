@@ -30,8 +30,6 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
             write_packet_data(
                 black_box(&mut wtr.to_owned()),
                 black_box(&mut data_packet),
-                black_box(0),
-                black_box(true),
             )
         })
     });
@@ -50,8 +48,6 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
             write_packet_data(
                 black_box(&mut wtr.to_owned()),
                 black_box(&mut data_packet),
-                black_box(0),
-                black_box(false),
             )
         })
     });
