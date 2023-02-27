@@ -5,7 +5,7 @@ use super::protocol_errors::{
 
 use super::soeprotocol_functions::*;
 use super::{
-    crc::{append_crc, crc32},
+    crc::crc32,
     lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked},
     soeprotocol_packets_structs::*,
 };
@@ -199,18 +199,9 @@ impl Soeprotocol {
     pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap();
-        let was_crc_enabled = self.is_using_crc();
-        if was_crc_enabled {
-            self.disable_crc();
-        }
         for packet in packets {
             write_data_length(&mut self.wtr, packet.len());
             self.wtr.append(&mut packet.clone());
-        }
-        if was_crc_enabled {
-            let crc_seed = self.get_crc_seed();
-            append_crc(&mut self.wtr, crc_seed);
-            self.enable_crc();
         }
         self.wtr.clone()
     }
@@ -240,7 +231,7 @@ impl Soeprotocol {
     fn _pack_data_object(&mut self, opcode: u16, mut packet: DataPacket) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap();
-        write_packet_data(&mut self.wtr, &mut packet, self.crc_seed, self.use_crc);
+        write_packet_data(&mut self.wtr, &mut packet);
         self.wtr.clone()
     }
 
@@ -271,10 +262,6 @@ impl Soeprotocol {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap();
         self.wtr.write_u16::<BigEndian>(sequence).unwrap();
-        if self.use_crc {
-            let crc_seed = self.get_crc_seed();
-            append_crc(&mut self.wtr, crc_seed);
-        }
         self.wtr.clone()
     }
 
@@ -979,14 +966,6 @@ mod tests {
     }
 
     #[test]
-    fn outoforder_pack_with_crc_test() {
-        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
-        let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack);
-        assert_eq!(data_pack, [0, 17, 0, 1, 38, 184])
-    }
-
-    #[test]
     fn ack_parse_size_error_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 3] = [0, 21, 111];
@@ -1024,14 +1003,6 @@ mod tests {
         let data_to_pack: String = r#"{"name":"Ack"}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
-    }
-
-    #[test]
-    fn ack_pack_with_crc_test() {
-        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
-        let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
-        assert_eq!(data_pack, [0, 21, 0, 1, 142, 100])
     }
 
     #[test]
@@ -1123,26 +1094,6 @@ mod tests {
     }
 
     #[test]
-    fn multi_pack_with_crc_test() {
-        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
-        let data_to_pack:String = r#"{"sub_packets":[[0, 21, 0, 1],[0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
-        71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
-        169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
-        247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
-        assert_eq!(
-            data_pack,
-            [
-                0, 3, 4, 0, 21, 0, 1, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165,
-                71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
-                169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
-                247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
-                160, 48
-            ]
-        )
-    }
-
-    #[test]
     fn data_parse_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_parse: [u8; 45] = [
@@ -1202,18 +1153,6 @@ mod tests {
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
-    }
-
-    #[test]
-    fn data_pack_with_crc_test() {
-        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
-        let data_to_pack =
-            r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(), data_to_pack);
-        assert_eq!(
-            data_pack,
-            [0, 9, 0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0, 23, 207]
-        )
     }
 
     #[test]
@@ -1284,17 +1223,5 @@ mod tests {
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack("DataFragment".to_owned(), data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
-    }
-
-    #[test]
-    fn data_fragment_pack_with_crc_test() {
-        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
-        let data_to_pack =
-            r#"{"sequence":2,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("DataFragment".to_owned(), data_to_pack);
-        assert_eq!(
-            data_pack,
-            [0, 13, 0, 2, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0, 242, 67]
-        )
     }
 }

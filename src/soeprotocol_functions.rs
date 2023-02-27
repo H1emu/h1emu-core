@@ -1,4 +1,3 @@
-use super::crc::append_crc;
 use super::soeprotocol_packets_structs::*;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Cursor;
@@ -87,17 +86,9 @@ pub fn extract_subpacket_data(
         .to_vec()
 }
 
-pub fn write_packet_data(
-    wtr: &mut Vec<u8>,
-    data_packet: &mut DataPacket,
-    crc_seed: u32,
-    use_crc: bool,
-) {
+pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
     wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap();
     wtr.append(&mut data_packet.data);
-    if use_crc {
-        append_crc(wtr, crc_seed);
-    }
 }
 
 #[cfg(test)]
@@ -115,29 +106,10 @@ mod tests {
             sequence: 0,
             error: None,
         };
-        super::write_packet_data(&mut wtr, &mut data_packet, 0, false);
+        super::write_packet_data(&mut wtr, &mut data_packet);
         assert_eq!(
             wtr,
             [0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0].to_vec()
-        )
-    }
-
-    #[test]
-    fn write_packet_data_with_crc_test() {
-        let data_to_pack: Vec<u8> = [
-            2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
-        ]
-        .to_vec();
-        let mut wtr = vec![];
-        let mut data_packet = super::DataPacket {
-            data: data_to_pack,
-            sequence: 0,
-            error: None,
-        };
-        super::write_packet_data(&mut wtr, &mut data_packet, 0, true);
-        assert_eq!(
-            wtr,
-            [0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0, 9, 51].to_vec()
         )
     }
 }
