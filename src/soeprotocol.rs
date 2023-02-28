@@ -605,6 +605,16 @@ impl Soeprotocol {
         let was_crc_enabled = self.is_using_crc();
         if was_crc_enabled {
             self.disable_crc();
+            rdr.set_position(data_end);
+            let crc: u16 = rdr.read_u16::<BigEndian>().unwrap();
+            let vec = rdr.clone().into_inner();
+            let packet_without_crc = &vec[0..data_end as usize];
+            let crc_value =
+                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
+            if crc_value != crc {
+                return gen_crc_error_json(&vec, crc_value, crc);
+            }
+            rdr.set_position(2); // reset pos after the opcode
         }
         loop {
             let sub_packet_data_length = read_data_length(&mut rdr);
@@ -628,8 +638,6 @@ impl Soeprotocol {
         if was_crc_enabled {
             self.enable_crc();
         }
-
-        // TODO : check crc
         multi_result
     }
 
@@ -1020,6 +1028,20 @@ mod tests {
 
     #[test]
     fn multi_parse_corrupted_test() {
+        let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
+        let data_to_parse: [u8; 75] = [
+            0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,
+            228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,
+            204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,
+            145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
+        ];
+        let data_parsed: serde_json::Value =
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "data_end": 75,"position": 58, "subpacket_length": 247,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
+        assert_eq!(data_parsed, succesful_data)
+    }
+    #[test]
+    fn multi_parse_crc_fail_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 75] = [
             0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,
@@ -1029,7 +1051,7 @@ mod tests {
         ];
         let data_parsed: serde_json::Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "data_end": 73,"position": 58, "subpacket_length": 247,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "name": "Error", "expected_crc": 62304,"given_crc": 2806,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
         assert_eq!(data_parsed, succesful_data)
     }
 
