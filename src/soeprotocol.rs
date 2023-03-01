@@ -48,10 +48,16 @@ impl Soeprotocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x01).unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.crc_length).unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
+        self.wtr.write_u16::<BigEndian>(0x01).unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.crc_length)
+            .unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.session_id)
+            .unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.udp_length)
+            .unwrap_or_default();
         self.wtr.append(&mut u8_from_str_nul_utf8_unchecked(
             packet.protocol.as_str(),
         ));
@@ -76,15 +82,21 @@ impl Soeprotocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x02).unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.session_id).unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.crc_seed).unwrap();
-        self.wtr.write_u8(packet.crc_length).unwrap();
+        self.wtr.write_u16::<BigEndian>(0x02).unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.session_id)
+            .unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.crc_seed)
+            .unwrap_or_default();
+        self.wtr.write_u8(packet.crc_length).unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.encrypt_method)
-            .unwrap();
-        self.wtr.write_u32::<BigEndian>(packet.udp_length).unwrap();
-        self.wtr.write_u32::<BigEndian>(3).unwrap();
+            .unwrap_or_default();
+        self.wtr
+            .write_u32::<BigEndian>(packet.udp_length)
+            .unwrap_or_default();
+        self.wtr.write_u32::<BigEndian>(3).unwrap_or_default();
         self.wtr.clone()
     }
 
@@ -113,34 +125,34 @@ impl Soeprotocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x07).unwrap();
+        self.wtr.write_u16::<BigEndian>(0x07).unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.client_tick_count)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.last_client_update)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.average_update)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.shortest_update)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.longest_update)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.last_server_update)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.packets_sent)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.packets_received)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.unknown_field)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr.clone()
     }
 
@@ -164,28 +176,28 @@ impl Soeprotocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x08).unwrap();
+        self.wtr.write_u16::<BigEndian>(0x08).unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.client_tick_count)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.server_tick_count)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.client_packet_sent)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.client_packet_received)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.server_packet_sent)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u64::<BigEndian>(packet.server_packet_received)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.unknown_field)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr.clone()
     }
 
@@ -198,7 +210,7 @@ impl Soeprotocol {
 
     pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
         for packet in packets {
             write_data_length(&mut self.wtr, packet.len());
             self.wtr.append(&mut packet.clone());
@@ -230,7 +242,7 @@ impl Soeprotocol {
 
     fn _pack_data_object(&mut self, opcode: u16, mut packet: DataPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
         write_packet_data(&mut self.wtr, &mut packet);
         self.wtr.clone()
     }
@@ -260,8 +272,10 @@ impl Soeprotocol {
 
     fn _pack_ack_object(&mut self, opcode: u16, sequence: u16) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(opcode).unwrap();
-        self.wtr.write_u16::<BigEndian>(sequence).unwrap();
+        self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(sequence)
+            .unwrap_or_default();
         self.wtr.clone()
     }
 
@@ -477,7 +491,7 @@ impl Soeprotocol {
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
-        let opcode = rdr.read_u16::<BigEndian>().unwrap();
+        let opcode = rdr.read_u16::<BigEndian>().unwrap_or_default();
 
         return match opcode {
             0x01 => self.parse_session_request(rdr),
@@ -500,9 +514,9 @@ impl Soeprotocol {
             return gen_size_error_json(rdr);
         }
 
-        let crc_length = rdr.read_u32::<BigEndian>().unwrap();
-        let session_id = rdr.read_u32::<BigEndian>().unwrap();
-        let udp_length = rdr.read_u32::<BigEndian>().unwrap();
+        let crc_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let udp_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
         let protocol_data_position = rdr.position() as usize;
         let raw_data = rdr.into_inner();
         unsafe {
@@ -518,11 +532,11 @@ impl Soeprotocol {
         if rdr.get_ref().len() != PacketsMinSize::SessionReply as usize {
             return gen_size_error_json(rdr);
         }
-        let session_id = rdr.read_u32::<BigEndian>().unwrap();
-        let crc_seed = rdr.read_u32::<BigEndian>().unwrap();
-        let crc_length = rdr.read_u8().unwrap();
-        let encrypt_method = rdr.read_u16::<BigEndian>().unwrap();
-        let udp_length = rdr.read_u32::<BigEndian>().unwrap();
+        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let crc_seed = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let crc_length = rdr.read_u8().unwrap_or_default();
+        let encrypt_method = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let udp_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
         format!(
             r#"{{"name":"SessionReply","session_id":{},"crc_seed":{},"crc_length":{},"encrypt_method":{},"udp_length":{}}}"#,
             session_id, crc_seed, crc_length, encrypt_method, udp_length
@@ -533,8 +547,8 @@ impl Soeprotocol {
         if rdr.get_ref().len() < PacketsMinSize::Disconnect as usize {
             return r#"{"name":"Disconnect" ,"session_id":null,"reason":"unknown"}"#.to_string();
         }
-        let session_id = rdr.read_u32::<BigEndian>().unwrap();
-        let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap());
+        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap_or_default());
         format!(
             r#"{{"name":"Disconnect" ,"session_id":{},"reason":"{}"}}"#,
             session_id, reason
@@ -545,15 +559,15 @@ impl Soeprotocol {
         if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
             return gen_size_error_json(rdr);
         }
-        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap();
-        let last_client_update = rdr.read_u32::<BigEndian>().unwrap();
-        let average_update = rdr.read_u32::<BigEndian>().unwrap();
-        let shortest_update = rdr.read_u32::<BigEndian>().unwrap();
-        let longest_update = rdr.read_u32::<BigEndian>().unwrap();
-        let last_server_update = rdr.read_u32::<BigEndian>().unwrap();
-        let packets_sent = rdr.read_u64::<BigEndian>().unwrap();
-        let packets_received = rdr.read_u64::<BigEndian>().unwrap();
-        let unknown_field = rdr.read_u16::<BigEndian>().unwrap();
+        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let last_client_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let average_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let shortest_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let longest_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let last_server_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let packets_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let packets_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let unknown_field = rdr.read_u16::<BigEndian>().unwrap_or_default();
         format!(
             r#"{{"name":"NetStatusRequest","client_tick_count":{},"last_client_update":{},"average_update":{},"shortest_update":{},"longest_update":{},"last_server_update":{},"packets_sent":{},"packets_received":{},"unknown_field":{}}}"#,
             client_tick_count,
@@ -572,13 +586,13 @@ impl Soeprotocol {
         if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
             return gen_size_error_json(rdr);
         }
-        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap();
-        let server_tick_count = rdr.read_u32::<BigEndian>().unwrap();
-        let client_packet_sent = rdr.read_u64::<BigEndian>().unwrap();
-        let client_packet_received = rdr.read_u64::<BigEndian>().unwrap();
-        let server_packet_sent = rdr.read_u64::<BigEndian>().unwrap();
-        let server_packet_received = rdr.read_u64::<BigEndian>().unwrap();
-        let unknown_field = rdr.read_u16::<BigEndian>().unwrap();
+        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let server_tick_count = rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let client_packet_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let client_packet_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let server_packet_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let server_packet_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let unknown_field = rdr.read_u16::<BigEndian>().unwrap_or_default();
         format!(
             r#"{{"name":"NetStatusReply","client_tick_count":{},"server_tick_count":{},"client_packet_sent":{},"client_packet_received":{},"server_packet_sent":{},"server_packet_received":{},"unknown_field":{}}}"#,
             client_tick_count,
@@ -606,7 +620,7 @@ impl Soeprotocol {
         if was_crc_enabled {
             self.disable_crc();
             rdr.set_position(data_end);
-            let crc: u16 = rdr.read_u16::<BigEndian>().unwrap();
+            let crc: u16 = rdr.read_u16::<BigEndian>().unwrap_or_default();
             let vec = rdr.clone().into_inner();
             let packet_without_crc = &vec[0..data_end as usize];
             let crc_value =
@@ -650,13 +664,13 @@ impl Soeprotocol {
         } else {
             "DataFragment"
         };
-        let sequence = rdr.read_u16::<BigEndian>().unwrap();
+        let sequence = rdr.read_u16::<BigEndian>().unwrap_or_default();
 
         let data_end: u64 = get_data_end(&rdr, self.use_crc);
         let mut crc: u16 = 0;
         if self.use_crc {
             rdr.set_position(data_end);
-            crc = rdr.read_u16::<BigEndian>().unwrap();
+            crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
         }
         let vec = rdr.get_ref().to_vec();
         let data = &vec[4..data_end as usize];
@@ -680,9 +694,9 @@ impl Soeprotocol {
             return gen_size_error_json(rdr);
         }
         let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
-        let sequence = rdr.read_u16::<BigEndian>().unwrap();
+        let sequence = rdr.read_u16::<BigEndian>().unwrap_or_default();
         if self.use_crc {
-            let crc = rdr.read_u16::<BigEndian>().unwrap();
+            let crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
             let data_end: u64 = get_data_end(&rdr, self.use_crc);
             let vec = rdr.into_inner();
             let packet_without_crc = &vec[0..data_end as usize];
@@ -720,8 +734,9 @@ mod tests {
             95, 57, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionRequest","crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionRequest","crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -730,8 +745,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 12] = [0, 1, 111, 103, 105, 110, 85, 100, 112, 95, 57, 2];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 1, 111, 103, 105, 110, 85, 100, 112,95, 57, 2], "size": 12}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 1, 111, 103, 105, 110, 85, 100, 112,95, 57, 2], "size": 12}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -765,8 +781,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 10] = [0, 2, 111, 103, 105, 110, 85, 100, 112, 95];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,2,111,103,105,110,85,100,112,95], "size": 10}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,2,111,103,105,110,85,100,112,95], "size": 10}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -777,8 +794,9 @@ mod tests {
             0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionReply","session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionReply","session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -810,8 +828,9 @@ mod tests {
             0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -823,8 +842,9 @@ mod tests {
             0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216,0], "size": 43}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216,0], "size": 43}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -863,8 +883,9 @@ mod tests {
             0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"client_packet_received": 1, "client_packet_sent": 2, "client_tick_count": 64348, "name": "NetStatusReply", "server_packet_received": 2, "server_packet_sent": 1, "server_tick_count": 556254524, "unknown_field": 33748}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"client_packet_received": 1, "client_packet_sent": 2, "client_tick_count": 64348, "name": "NetStatusReply", "server_packet_received": 2, "server_packet_sent": 1, "server_tick_count": 556254524, "unknown_field": 33748}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -876,8 +897,9 @@ mod tests {
             0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212,0], "size": 43}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212,0], "size": 43}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -928,11 +950,12 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 3] = [0, 17, 111];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 17, 111], "size": 3}"#,
         )
-        .unwrap();
+        .unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -941,9 +964,10 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 38, 184];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesful_data: serde_json::Value =
-            serde_json::from_str(r#"{"name":"OutOfOrder","sequence":1}"#).unwrap();
+            serde_json::from_str(r#"{"name":"OutOfOrder","sequence":1}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -952,8 +976,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 142, 100];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 9912, "given_crc": 36452, "name": "Error", "raw": [0, 17, 0, 1, 142, 100]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 9912, "given_crc": 36452, "name": "Error", "raw": [0, 17, 0, 1, 142, 100]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -978,11 +1003,12 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 3] = [0, 21, 111];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 21, 111], "size": 3}"#,
         )
-        .unwrap();
+        .unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -991,9 +1017,10 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 21, 0, 1, 142, 100];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesful_data: serde_json::Value =
-            serde_json::from_str(r#"{"name":"Ack","sequence":1}"#).unwrap();
+            serde_json::from_str(r#"{"name":"Ack","sequence":1}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1018,11 +1045,12 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 4] = [0, 3, 4, 0];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 3, 4, 0], "size": 4}"#,
         )
-        .unwrap();
+        .unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1036,8 +1064,9 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "data_end": 75,"position": 58, "subpacket_length": 247,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "data_end": 75,"position": 58, "subpacket_length": 247,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
@@ -1050,8 +1079,9 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "name": "Error", "expected_crc": 62304,"given_crc": 2806,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "name": "Error", "expected_crc": 62304,"given_crc": 2806,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1065,8 +1095,9 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1080,8 +1111,9 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246, 10, 27,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1124,8 +1156,9 @@ mod tests {
             117, 146, 204, 94, 60,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204,94,60]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204,94,60]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1138,8 +1171,9 @@ mod tests {
             117, 146, 204, 94, 60,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1152,8 +1186,9 @@ mod tests {
             117, 146, 204, 94, 61,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 24124, "given_crc": 24125, "name": "Error", "raw": [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 24124, "given_crc": 24125, "name": "Error", "raw": [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1197,8 +1232,9 @@ mod tests {
             18, 0, 26, 152, 33, 115, 61, 208, 21,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -1222,8 +1258,9 @@ mod tests {
             18, 0, 26, 152, 33, 115, 61, 208, 21,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec())).unwrap();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap();
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
