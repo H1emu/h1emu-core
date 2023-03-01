@@ -53,23 +53,23 @@ pub fn get_data_end(rdr: &Cursor<&std::vec::Vec<u8>>, use_crc: bool) -> u64 {
 
 pub fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) {
     if data_length <= 0xFF {
-        wtr.write_u8(data_length as u8).unwrap();
+        wtr.write_u8(data_length as u8).unwrap_or_default();
     } else if data_length <= 0xFFFF {
-        wtr.write_u16::<BigEndian>(data_length as u16).unwrap();
+        wtr.write_u16::<BigEndian>(data_length as u16).unwrap_or_default();
     } else {
-        wtr.write_u32::<BigEndian>(data_length as u32).unwrap();
+        wtr.write_u32::<BigEndian>(data_length as u32).unwrap_or_default();
     }
 }
 
 pub fn read_data_length(rdr: &mut Cursor<&std::vec::Vec<u8>>) -> u32 {
     let initial_rdr_position = rdr.position();
-    let mut data_length: u32 = rdr.read_u8().unwrap() as u32;
+    let mut data_length: u32 = rdr.read_u8().unwrap_or_default() as u32;
     if data_length > 0xFF {
         rdr.set_position(initial_rdr_position);
-        data_length = rdr.read_u16::<BigEndian>().unwrap() as u32;
+        data_length = rdr.read_u16::<BigEndian>().unwrap_or_default() as u32;
         if data_length > 0xFFFF {
             rdr.set_position(initial_rdr_position);
-            data_length = rdr.read_u32::<BigEndian>().unwrap();
+            data_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
         }
     }
     data_length
@@ -87,7 +87,7 @@ pub fn extract_subpacket_data(
 }
 
 pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
-    wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap();
+    wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap_or_default();
     wtr.append(&mut data_packet.data);
 }
 
