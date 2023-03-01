@@ -26,12 +26,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     };
 
     c.bench_function("write_packet_data_crc", |b| {
-        b.iter(|| {
-            write_packet_data(
-                black_box(&mut wtr.to_owned()),
-                black_box(&mut data_packet),
-            )
-        })
+        b.iter(|| write_packet_data(black_box(&mut wtr.to_owned()), black_box(&mut data_packet)))
     });
     let data_to_pack: Vec<u8> = [
         2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
@@ -44,12 +39,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
         error: None,
     };
     c.bench_function("write_packet_data", |b| {
-        b.iter(|| {
-            write_packet_data(
-                black_box(&mut wtr.to_owned()),
-                black_box(&mut data_packet),
-            )
-        })
+        b.iter(|| write_packet_data(black_box(&mut wtr.to_owned()), black_box(&mut data_packet)))
     });
 }
 

@@ -180,6 +180,7 @@ impl GatewayProtocol {
 }
 #[cfg(test)]
 mod tests {
+    use rand::random;
 
     #[test]
     fn login_request_parse_test() {
@@ -270,5 +271,23 @@ mod tests {
         .to_vec();
         let parsed_data = gatewayprotocol_class.parse(data);
         assert!(parsed_data.len() > 0)
+    }
+    #[test]
+    fn parsing_fail_rnd_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let opcodes_range_to_test: u8 = 40;
+        let rnd_packets = 50;
+        for i in 1..opcodes_range_to_test {
+            for _y in 0..rnd_packets {
+                let mut data: Vec<u8> = [i].to_vec();
+                let r: [u8; 8] = random();
+                let r2: [u8; 8] = random();
+                data.append(&mut r.to_vec());
+                data.append(&mut r2.to_vec());
+                println!("parse {:?}", data);
+                let result = gatewayprotocol_class.parse(data);
+                println!("result {:?}", result);
+            }
+        }
     }
 }
