@@ -22,7 +22,7 @@ impl GatewayProtocol {
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
         }
-        let full_opcode = rdr.read_u8().unwrap();
+        let full_opcode = rdr.read_u8().unwrap_or_default();
         let opcode = full_opcode & 0x1f;
         let channel = full_opcode >> 5;
         let parsed_data = match opcode {
@@ -78,27 +78,27 @@ impl GatewayProtocol {
     ) -> Vec<u8> {
         let opcode = base_opcode | channel << 5;
         self.wtr.clear();
-        self.wtr.write_u8(opcode).unwrap();
+        self.wtr.write_u8(opcode).unwrap_or_default();
         self.wtr.append(&mut data);
         self.wtr.clone()
     }
     pub fn pack_channel_is_routable_packet(&mut self) -> Vec<u8> {
         let opcode = 0x07;
         self.wtr.clear();
-        self.wtr.write_u8(opcode).unwrap();
+        self.wtr.write_u8(opcode).unwrap_or_default();
         self.wtr.clone()
     }
     pub fn pack_channel_is_not_routable_packet(&mut self) -> Vec<u8> {
         let opcode = 0x08;
         self.wtr.clear();
-        self.wtr.write_u8(opcode).unwrap();
+        self.wtr.write_u8(opcode).unwrap_or_default();
         self.wtr.clone()
     }
 }
 
 impl GatewayProtocol {
     fn parse_login_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        let character_id = rdr.read_u64::<LittleEndian>().unwrap();
+        let character_id = rdr.read_u64::<LittleEndian>().unwrap_or_default();
         let raw_data = rdr.clone().into_inner();
         let ticket_data_pos = rdr.position();
         let ticket_data_len = rdr.read_u32::<LittleEndian>().unwrap_or_default();
@@ -125,7 +125,7 @@ impl GatewayProtocol {
         )
     }
     fn parse_login_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        let logged_in: bool = rdr.read_u8().unwrap() != 0; // convert to bool
+        let logged_in: bool = rdr.read_u8().unwrap_or_default() != 0; // convert to bool
         format!(r#"{{"name":"LoginReply","logged_in":{}}}"#, logged_in)
     }
     fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
@@ -136,7 +136,7 @@ impl GatewayProtocol {
             channel,
             tunnel_data,
         };
-        serde_json::to_string(&packet).unwrap()
+        serde_json::to_string(&packet).unwrap_or_default()
     }
     fn parse_channel_is_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         format!(r#"{{"name":"ChannelIsRoutable","raw":"{:?}"}}"#, _rdr)
@@ -150,22 +150,22 @@ impl GatewayProtocol {
             return gen_deserializing_error_json();
         }
         self.wtr.clear();
-        self.wtr.write_u8(0x01).unwrap();
+        self.wtr.write_u8(0x01).unwrap_or_default();
         self.wtr
             .write_u64::<LittleEndian>(packet.character_id)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .write_u32::<LittleEndian>(packet.ticket.len() as u32)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr.append(&mut packet.ticket.as_bytes().to_vec());
         self.wtr
             .write_u32::<LittleEndian>(packet.client_protocol.len() as u32)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .append(&mut packet.client_protocol.as_bytes().to_vec());
         self.wtr
             .write_u32::<LittleEndian>(packet.client_build.len() as u32)
-            .unwrap();
+            .unwrap_or_default();
         self.wtr
             .append(&mut packet.client_build.as_bytes().to_vec());
         self.wtr.clone()
@@ -173,8 +173,10 @@ impl GatewayProtocol {
 
     pub fn pack_login_reply_object(&mut self, packet: LoginReplyPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u8(0x02).unwrap();
-        self.wtr.write_u8(packet.logged_in as u8).unwrap();
+        self.wtr.write_u8(0x02).unwrap_or_default();
+        self.wtr
+            .write_u8(packet.logged_in as u8)
+            .unwrap_or_default();
         self.wtr.clone()
     }
 }
@@ -191,10 +193,11 @@ mod tests {
             56, 48, 14, 0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"LoginRequest","character_id":"0x7c963899f5fdddf4","ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
         let succesful_data: serde_json::Value =
-            serde_json::from_str(succesfull_data_string).unwrap();
+            serde_json::from_str(succesfull_data_string).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
@@ -202,10 +205,11 @@ mod tests {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_to_parse: [u8; 2] = [2, 1];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"LoginReply","logged_in":true}"#;
         let succesful_data: serde_json::Value =
-            serde_json::from_str(succesfull_data_string).unwrap();
+            serde_json::from_str(succesfull_data_string).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
@@ -216,11 +220,12 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec())).unwrap();
+            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"TunnelPacket","channel":0,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
         let succesful_data: serde_json::Value =
-            serde_json::from_str(succesfull_data_string).unwrap();
+            serde_json::from_str(succesfull_data_string).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
     #[test]
@@ -273,6 +278,13 @@ mod tests {
         assert!(parsed_data.len() > 0)
     }
     #[test]
+    fn parsing_fail_0_25_0_test() {
+        let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
+        let data: Vec<u8> = [161, 171, 140, 10, 70, 163, 116, 53].to_vec();
+        let parsed_data = gatewayprotocol_class.parse(data);
+        assert!(parsed_data.len() > 0)
+    }
+    #[test]
     fn parsing_fail_rnd_test() {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let opcodes_range_to_test: u8 = 40;
@@ -280,10 +292,16 @@ mod tests {
         for i in 1..opcodes_range_to_test {
             for _y in 0..rnd_packets {
                 let mut data: Vec<u8> = [i].to_vec();
-                let r: [u8; 8] = random();
-                let r2: [u8; 8] = random();
+                let r: [u8; 4] = random();
                 data.append(&mut r.to_vec());
-                data.append(&mut r2.to_vec());
+                println!("parse {:?}", data);
+                let result = gatewayprotocol_class.parse(data);
+                println!("result {:?}", result);
+            }
+            for _y in 0..rnd_packets {
+                let mut data: Vec<u8> = [i].to_vec();
+                let r: [u8; 8] = random();
+                data.append(&mut r.to_vec());
                 println!("parse {:?}", data);
                 let result = gatewayprotocol_class.parse(data);
                 println!("result {:?}", result);
