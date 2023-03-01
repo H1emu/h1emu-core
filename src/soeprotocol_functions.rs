@@ -55,9 +55,11 @@ pub fn write_data_length(wtr: &mut Vec<u8>, data_length: usize) {
     if data_length <= 0xFF {
         wtr.write_u8(data_length as u8).unwrap_or_default();
     } else if data_length <= 0xFFFF {
-        wtr.write_u16::<BigEndian>(data_length as u16).unwrap_or_default();
+        wtr.write_u16::<BigEndian>(data_length as u16)
+            .unwrap_or_default();
     } else {
-        wtr.write_u32::<BigEndian>(data_length as u32).unwrap_or_default();
+        wtr.write_u32::<BigEndian>(data_length as u32)
+            .unwrap_or_default();
     }
 }
 
@@ -87,7 +89,8 @@ pub fn extract_subpacket_data(
 }
 
 pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
-    wtr.write_u16::<BigEndian>(data_packet.sequence).unwrap_or_default();
+    wtr.write_u16::<BigEndian>(data_packet.sequence)
+        .unwrap_or_default();
     wtr.append(&mut data_packet.data);
 }
 
