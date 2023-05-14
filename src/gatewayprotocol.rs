@@ -7,6 +7,15 @@ use super::lib_utils::read_prefixed_string_le;
 use super::protocol_errors::gen_deserializing_error_json;
 
 #[wasm_bindgen]
+pub enum GatewayChannels {
+    Zone = 0,
+    World = 1,
+    UpdatePosition = 2,
+    ShortCircuitZone = 3,
+    Gateway = 4,
+}
+
+#[wasm_bindgen]
 pub struct GatewayProtocol {
     wtr: Vec<u8>,
 }
