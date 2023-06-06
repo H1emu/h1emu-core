@@ -9,7 +9,6 @@ Utility library used in h1emu.
 - Joaat hash
 - RC4 encryption
 - Crc32
-- SpatialHashGrid
 
 ## Build
 
