@@ -1,4 +1,4 @@
-pub unsafe fn str_from_u8_nul_utf8_unchecked(utf8_src: &[u8]) -> &str {
+pub fn str_from_u8_nul_utf8_checked(utf8_src: &[u8]) -> &str {
     let mut nul_range_end = 1_usize;
     for b in utf8_src {
         if *b == 0 {
@@ -6,7 +6,7 @@ pub unsafe fn str_from_u8_nul_utf8_unchecked(utf8_src: &[u8]) -> &str {
         }
         nul_range_end += 1;
     }
-    return ::std::str::from_utf8_unchecked(&utf8_src[0..nul_range_end - 1]);
+    ::std::str::from_utf8(&utf8_src[0..nul_range_end - 1]).unwrap_or_default()
 }
 
 pub fn u8_from_str_nul_utf8_unchecked(data: &str) -> Vec<u8> {

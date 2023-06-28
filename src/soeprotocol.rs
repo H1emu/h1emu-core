@@ -6,7 +6,7 @@ use super::protocol_errors::{
 use super::soeprotocol_functions::*;
 use super::{
     crc::crc32,
-    lib_utils::{str_from_u8_nul_utf8_unchecked, u8_from_str_nul_utf8_unchecked},
+    lib_utils::{str_from_u8_nul_utf8_checked, u8_from_str_nul_utf8_unchecked},
     soeprotocol_packets_structs::*,
 };
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -519,13 +519,11 @@ impl Soeprotocol {
         let udp_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
         let protocol_data_position = rdr.position() as usize;
         let raw_data = rdr.into_inner();
-        unsafe {
-            let protocol = str_from_u8_nul_utf8_unchecked(&raw_data[protocol_data_position..]);
-            format!(
-                r#"{{"name":"SessionRequest","crc_length":{},"session_id":{},"udp_length":{},"protocol":"{}"}}"#,
-                crc_length, session_id, udp_length, protocol
-            )
-        }
+        let protocol = str_from_u8_nul_utf8_checked(&raw_data[protocol_data_position..]);
+        format!(
+            r#"{{"name":"SessionRequest","crc_length":{},"session_id":{},"udp_length":{},"protocol":"{}"}}"#,
+            crc_length, session_id, udp_length, protocol
+        )
     }
 
     fn parse_session_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
