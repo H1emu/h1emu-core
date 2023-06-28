@@ -21,18 +21,18 @@ full = ["game-utils","soeprotocol","gatewayprotocol","protocols","jenkins","rc4"
 
 
 [dependencies]
-wasm-bindgen = { version = "0.2.84" }
-getrandom = { version = "0.2.8", features = ["js"], optional = true }
+wasm-bindgen = { version = "0.2.87" }
+getrandom = { version = "0.2.10", features = ["js"], optional = true }
 rand = { version = "0.8.5", optional = true }
 byteorder = { version = "1.4.3", optional = true } 
-serde_json = {version = "1.0.94", optional = true}
-serde = { version = "1.0.159", features = ["derive"], optional = true }
-gloo-utils = "0.1.6"
+serde_json = {version = "1.0.97", optional = true}
+serde = { version = "1.0.164", features = ["derive"], optional = true }
+gloo-utils = "0.1.7"
 
 
 
 [dev-dependencies]
-criterion ={ version = "0.4.0"}
+criterion ={ version = "0.5.1"}
 
 [[bench]]
 name = "lib-bench"
@@ -49,7 +49,6 @@ strip = true
 opt-level = 3
 
 [package.metadata.wasm-pack.profile.release]
-# `wasm-opt`. For example `['-Os']` would optimize for size while `['-O4']`
 wasm-opt = ['-O4']
 
 [package.metadata.wasm-pack.profile.release.wasm-bindgen]
