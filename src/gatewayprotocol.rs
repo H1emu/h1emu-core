@@ -21,10 +21,81 @@ pub struct GatewayProtocol {
 }
 
 #[wasm_bindgen]
+pub struct GatewayPacket {
+    pub name: String,
+    pub channel: u8,
+    pub data: Vec<u8>,
+}
+
+#[wasm_bindgen]
 impl GatewayProtocol {
     #[wasm_bindgen(constructor)]
     pub fn initialize() -> GatewayProtocol {
         GatewayProtocol { wtr: vec![] }
+    }
+
+    pub fn identify(&mut self, data: Vec<u8>) -> GatewayPacket {
+        let mut rdr = Cursor::new(&data);
+        if data.len() < 2 {
+            return GatewayPacket {
+                name: "Unknown".to_string(),
+                channel: 0,
+                data: vec![],
+            };
+        }
+        let full_opcode = rdr.read_u8().unwrap_or_default();
+        let opcode = full_opcode & 0x1f;
+        let channel = full_opcode >> 5;
+        let data = data[1..].to_vec();
+        let gateway_packet = match opcode {
+            0x01 => GatewayPacket {
+                name: "LoginRequest".to_string(),
+                channel,
+                data,
+            },
+            0x02 => GatewayPacket {
+                name: "LoginReply".to_string(),
+                channel,
+                data,
+            },
+            0x03 => GatewayPacket {
+                name: "Logout".to_string(),
+                channel,
+                data,
+            },
+            0x04 => GatewayPacket {
+                name: "ForceDisconnect".to_string(),
+                channel,
+                data,
+            },
+            0x05 => GatewayPacket {
+                name: "TunnelData".to_string(),
+                channel,
+                data,
+            },
+            0x06 => GatewayPacket {
+                name: "TunnelData".to_string(),
+                channel,
+                data,
+            },
+            0x07 => GatewayPacket {
+                name: "ChannelIsRoutable".to_string(),
+                channel,
+                data,
+            },
+            0x08 => GatewayPacket {
+                name: "ChannelIsNotRoutable".to_string(),
+                channel,
+                data,
+            },
+            _ => GatewayPacket {
+                name: "Unknown".to_string(),
+                channel,
+                data: vec![],
+            },
+        };
+
+        return gateway_packet;
     }
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
