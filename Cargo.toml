@@ -1,38 +1,45 @@
 [package]
 name = "h1emu-core"
-version = "1.2.1"
+version = "1.2.2"
 edition = "2021"
 description = "Utility library used in h1emu."
 license = "BSD-3-Clause"
 repository = "https://github.com/H1emu/H1emu-core"
-readme="README.md"
+readme = "README.md"
 
 
 [features]
 default = ["full"]
-game-utils = ["rand","getrandom"]
-soeprotocol = ["crc","serde","serde_json","byteorder","protocols"]
-gatewayprotocol =  ["serde","serde_json","byteorder","protocols"]
-protocols=  ["serde","serde_json","byteorder"]
+game-utils = ["rand", "getrandom"]
+soeprotocol = ["crc", "serde", "serde_json", "byteorder", "protocols"]
+gatewayprotocol = ["serde", "serde_json", "byteorder", "protocols"]
+protocols = ["serde", "serde_json", "byteorder"]
 crc = ["byteorder"]
 rc4 = []
 jenkins = []
-full = ["game-utils","soeprotocol","gatewayprotocol","protocols","jenkins","rc4","crc"]
+full = [
+  "game-utils",
+  "soeprotocol",
+  "gatewayprotocol",
+  "protocols",
+  "jenkins",
+  "rc4",
+  "crc",
+]
 
 
 [dependencies]
 wasm-bindgen = { version = "0.2.87" }
 getrandom = { version = "0.2.10", features = ["js"], optional = true }
 rand = { version = "0.8.5", optional = true }
-byteorder = { version = "1.4.3", optional = true } 
-serde_json = {version = "1.0.97", optional = true}
-serde = { version = "1.0.164", features = ["derive"], optional = true }
-gloo-utils = "0.1.7"
-
+byteorder = { version = "1.4.3", optional = true }
+serde_json = { version = "1.0.105", optional = true }
+serde = { version = "1.0.186", features = ["derive"], optional = true }
+gloo-utils = "0.2.0"
 
 
 [dev-dependencies]
-criterion ={ version = "0.5.1"}
+criterion = { version = "0.5.1" }
 
 [[bench]]
 name = "lib-bench"
