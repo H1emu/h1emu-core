@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SessionRequestPacket {
     pub session_id: u32,
     pub crc_length: u32,
@@ -9,7 +9,7 @@ pub struct SessionRequestPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SessionReplyPacket {
     pub session_id: u32,
     pub crc_seed: u32,
@@ -20,7 +20,7 @@ pub struct SessionReplyPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NetStatusReplyPacket {
     pub client_tick_count: u16,
     pub server_tick_count: u32,
@@ -33,7 +33,7 @@ pub struct NetStatusReplyPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MultiPackablePacket {
     // should contain all possible field for a multiPackable packet
     pub name: String,
@@ -42,7 +42,7 @@ pub struct MultiPackablePacket {
     pub sequence: u16,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DataPacket {
     pub data: Vec<u8>,
     pub sequence: u16,
@@ -50,14 +50,14 @@ pub struct DataPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AckPacket {
     pub sequence: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NetStatusRequestPacket {
     pub client_tick_count: u16,
     pub last_client_update: u32,
@@ -72,7 +72,7 @@ pub struct NetStatusRequestPacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SubBasePacket {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -83,7 +83,7 @@ pub struct SubBasePacket {
     pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SubBasePackets {
     pub sub_packets: Vec<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
