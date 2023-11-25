@@ -196,7 +196,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("session_request_pack", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "SessionRequest".to_owned(),
+                SoeOpcode::SessionRequest,
                 black_box(session_request_to_pack.to_string()),
             )
         })
@@ -211,7 +211,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("session_reply_to_pack", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "SessionReply".to_owned(),
+                SoeOpcode::SessionReply,
                 black_box(session_reply_to_pack.to_string()),
             )
         })
@@ -222,12 +222,12 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
         b.iter(|| soeprotocol_class.pack_session_reply_object(session_reply_to_pack_object.clone()))
     });
     c.bench_function("ping_to_pack", |b| {
-        b.iter(|| soeprotocol_class.pack("Ping".to_owned(), black_box(ping_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Ping, black_box(ping_to_pack.to_string())))
     });
     c.bench_function("outoforder_to_pack", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "OutOfOrder".to_owned(),
+                SoeOpcode::OutOfOrder,
                 black_box(outoforder_to_pack.to_string()),
             )
         })
@@ -238,7 +238,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
         b.iter(|| soeprotocol_class.pack_out_of_order_object(outoforder_to_pack_object.clone()))
     });
     c.bench_function("ack_to_pack", |b| {
-        b.iter(|| soeprotocol_class.pack("Ack".to_owned(), black_box(ack_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Ack, black_box(ack_to_pack.to_string())))
     });
     let ack_to_pack_object = soeprotocol_class.get_ack_object(ack_to_pack.to_string());
     c.bench_function("ack_to_pack_from_object", |b| {
@@ -247,7 +247,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("multi_to_pack", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "MultiPacket".to_owned(),
+                SoeOpcode::MultiPacket,
                 black_box(multi_to_pack.to_string()),
             )
         })
@@ -257,7 +257,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
         b.iter(|| soeprotocol_class.pack_multi_object(multi_to_pack_object.clone()))
     });
     c.bench_function("data_to_pack", |b| {
-        b.iter(|| soeprotocol_class.pack("Data".to_owned(), black_box(data_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Data, black_box(data_to_pack.to_string())))
     });
     let data_to_pack_object = soeprotocol_class.get_data_object(data_to_pack.to_string());
     c.bench_function("data_to_pack_from_object", |b| {
@@ -266,7 +266,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("data_fragment_to_pack", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "DataFragment".to_owned(),
+                SoeOpcode::DataFragment,
                 black_box(data_fragment_to_pack.to_string()),
             )
         })
@@ -282,7 +282,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("session_request_pack_crc", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "SessionRequest".to_owned(),
+                SoeOpcode::SessionRequest,
                 black_box(session_request_to_pack.to_string()),
             )
         })
@@ -290,40 +290,40 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("session_reply_to_pack_crc", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "SessionReply".to_owned(),
+                SoeOpcode::SessionReply,
                 black_box(session_reply_to_pack.to_string()),
             )
         })
     });
     c.bench_function("ping_to_pack_crc", |b| {
-        b.iter(|| soeprotocol_class.pack("Ping".to_owned(), black_box(ping_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Ping, black_box(ping_to_pack.to_string())))
     });
     c.bench_function("outoforder_to_pack_crc", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "OutOfOrder".to_owned(),
+                SoeOpcode::OutOfOrder,
                 black_box(outoforder_to_pack.to_string()),
             )
         })
     });
     c.bench_function("ack_to_pack_crc", |b| {
-        b.iter(|| soeprotocol_class.pack("Ack".to_owned(), black_box(ack_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Ack, black_box(ack_to_pack.to_string())))
     });
     c.bench_function("multi_to_pack_crc", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "MultiPacket".to_owned(),
+                SoeOpcode::MultiPacket,
                 black_box(multi_to_pack.to_string()),
             )
         })
     });
     c.bench_function("data_to_pack_crc", |b| {
-        b.iter(|| soeprotocol_class.pack("Data".to_owned(), black_box(data_to_pack.to_string())))
+        b.iter(|| soeprotocol_class.pack(SoeOpcode::Data, black_box(data_to_pack.to_string())))
     });
     c.bench_function("data_fragment_to_pack_crc", |b| {
         b.iter(|| {
             soeprotocol_class.pack(
-                "DataFragment".to_owned(),
+                SoeOpcode::DataFragment,
                 black_box(data_fragment_to_pack.to_string()),
             )
         })
