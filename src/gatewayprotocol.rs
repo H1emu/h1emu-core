@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 
 use super::gatewayprotocol_packets_structs::*;
 use super::lib_utils::read_prefixed_string_le;
-use super::protocol_errors::gen_deserializing_error_json;
 
 #[wasm_bindgen]
 pub enum GatewayChannels {
@@ -63,14 +62,10 @@ impl GatewayProtocol {
             ticket,
             client_protocol,
             client_build,
-            error: None,
         })
     }
     pub fn pack_login_reply_packet(&mut self, logged_in: bool) -> Vec<u8> {
-        self.pack_login_reply_object(LoginReplyPacket {
-            logged_in,
-            error: None,
-        })
+        self.pack_login_reply_object(LoginReplyPacket { logged_in })
     }
     pub fn pack_tunnel_data_packet_for_client(&mut self, data: Vec<u8>, channel: u8) -> Vec<u8> {
         self._pack_tunnel_data_packet(0x05, data, channel)
@@ -154,9 +149,6 @@ impl GatewayProtocol {
     }
 
     pub fn pack_login_request_object(&mut self, packet: LoginRequestPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self.wtr.clear();
         self.wtr.write_u8(0x01).unwrap_or_default();
         self.wtr

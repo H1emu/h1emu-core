@@ -1,5 +1,7 @@
 use std::io::Cursor;
 
+use wasm_bindgen::prelude::wasm_bindgen;
+
 pub fn gen_size_error_json(rdr: Cursor<&std::vec::Vec<u8>>) -> String {
     format!(
         r#"{{"name":"Error","error":"size","size":{},"raw":{:?}}}"#,
@@ -29,12 +31,15 @@ pub fn gen_corruption_error_json(
     )
 }
 
-pub fn gen_deserializing_error_json() -> Vec<u8> {
-    vec![] // maybe encoding a null string with error log would be better
-           /* return json!({
-               "name": "Error",
-               "error": "deserializing",
-               "raw": packet
-           })
-           .to_string();*/
+#[wasm_bindgen]
+pub enum ErrorType {
+    Deserializing = 0x99,
+}
+
+pub fn gen_deserializing_error_json(error: serde_json::Error) -> Vec<u8> {
+    let error_string = format!("{}", error);
+    // create a vec starting with the error type and then the error stringify
+    let mut error_vec: Vec<u8> = vec![0x00, ErrorType::Deserializing as u8];
+    error_vec.append(&mut error_string.as_bytes().to_vec());
+    error_vec
 }

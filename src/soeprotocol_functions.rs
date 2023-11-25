@@ -107,7 +107,6 @@ mod tests {
         let mut data_packet = super::DataPacket {
             data: data_to_pack,
             sequence: 0,
-            error: None,
         };
         super::write_packet_data(&mut wtr, &mut data_packet);
         assert_eq!(

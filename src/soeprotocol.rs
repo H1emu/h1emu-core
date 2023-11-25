@@ -44,6 +44,7 @@ pub enum SoeOpcode {
     DataFragment = 0x0d,
     OutOfOrder = 0x11,
     Ack = 0x15,
+    Group = 0x19,
     FatalError = 0x1D,
     Unknown = 0x00,
 }
@@ -68,20 +69,14 @@ impl Soeprotocol {
             _ => SoeOpcode::Unknown,
         }
     }
-    pub fn get_session_request_object(&mut self, packet_string: String) -> SessionRequestPacket {
-        serde_json::from_str(&packet_string).unwrap_or_else(|_| SessionRequestPacket {
-            session_id: 0,
-            crc_length: 0,
-            udp_length: 0,
-            protocol: "".to_string(),
-            error: Some(true),
-        })
+    pub fn get_session_request_object(
+        &mut self,
+        packet_string: String,
+    ) -> Result<SessionRequestPacket, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     pub fn pack_session_request_object(&mut self, packet: SessionRequestPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x01).unwrap_or_default();
         self.wtr
@@ -99,23 +94,14 @@ impl Soeprotocol {
         self.wtr.clone()
     }
 
-    pub fn get_session_reply_object(&mut self, packet_string: String) -> SessionReplyPacket {
-        serde_json::from_str(&packet_string).unwrap_or({
-            SessionReplyPacket {
-                session_id: 0,
-                crc_seed: 0,
-                crc_length: 0,
-                encrypt_method: 0,
-                udp_length: 0,
-                error: Some(true),
-            }
-        })
+    pub fn get_session_reply_object(
+        &mut self,
+        packet_string: String,
+    ) -> Result<SessionReplyPacket, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     pub fn pack_session_reply_object(&mut self, packet: SessionReplyPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x02).unwrap_or_default();
         self.wtr
@@ -138,27 +124,11 @@ impl Soeprotocol {
     pub fn get_net_status_request_object(
         &mut self,
         packet_string: String,
-    ) -> NetStatusRequestPacket {
-        serde_json::from_str(&packet_string).unwrap_or({
-            NetStatusRequestPacket {
-                client_tick_count: 0,
-                last_client_update: 0,
-                average_update: 0,
-                shortest_update: 0,
-                longest_update: 0,
-                last_server_update: 0,
-                packets_sent: 0,
-                packets_received: 0,
-                unknown_field: 0,
-                error: Some(true),
-            }
-        })
+    ) -> Result<NetStatusRequestPacket, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     pub fn pack_net_status_request_object(&mut self, packet: NetStatusRequestPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x07).unwrap_or_default();
         self.wtr
@@ -201,15 +171,11 @@ impl Soeprotocol {
                 server_packet_sent: 0,
                 server_packet_received: 0,
                 unknown_field: 0,
-                error: Some(true),
             }
         })
     }
 
     pub fn pack_net_status_reply_object(&mut self, packet: NetStatusReplyPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(0x08).unwrap_or_default();
         self.wtr
@@ -236,11 +202,11 @@ impl Soeprotocol {
         self.wtr.clone()
     }
 
-    pub fn get_multi_object(&mut self, packet_string: String) -> SubBasePackets {
-        serde_json::from_str(&packet_string).unwrap_or_else(|_| SubBasePackets {
-            sub_packets: vec![],
-            error: Some(true),
-        })
+    pub fn get_multi_object(
+        &mut self,
+        packet_string: String,
+    ) -> Result<SubBasePackets, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
@@ -254,25 +220,18 @@ impl Soeprotocol {
     }
 
     pub fn pack_group_object(&mut self, group_packet: SubBasePackets) -> Vec<u8> {
-        if group_packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
-        self.group_packets(0x19, group_packet.sub_packets)
+        self.group_packets(SoeOpcode::Group as u16, group_packet.sub_packets)
     }
 
     pub fn pack_multi_object(&mut self, multi_packet: SubBasePackets) -> Vec<u8> {
-        if multi_packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
-        self.group_packets(0x03, multi_packet.sub_packets)
+        self.group_packets(SoeOpcode::MultiPacket as u16, multi_packet.sub_packets)
     }
 
-    pub fn get_data_object(&mut self, packet_string: String) -> DataPacket {
-        serde_json::from_str(&packet_string).unwrap_or_else(|_| DataPacket {
-            data: vec![],
-            sequence: 0,
-            error: Some(true),
-        })
+    pub fn get_data_object(
+        &mut self,
+        packet_string: String,
+    ) -> Result<DataPacket, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     fn _pack_data_object(&mut self, opcode: u16, mut packet: DataPacket) -> Vec<u8> {
@@ -283,26 +242,18 @@ impl Soeprotocol {
     }
 
     pub fn pack_data_object(&mut self, packet: DataPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self._pack_data_object(0x09, packet)
     }
 
     pub fn pack_fragment_data_object(&mut self, packet: DataPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self._pack_data_object(0x0d, packet)
     }
 
-    pub fn get_ack_object(&mut self, packet_string: String) -> AckPacket {
-        serde_json::from_str(&packet_string).unwrap_or({
-            AckPacket {
-                sequence: 0,
-                error: Some(true),
-            }
-        })
+    pub fn get_ack_object(
+        &mut self,
+        packet_string: String,
+    ) -> Result<AckPacket, serde_json::Error> {
+        serde_json::from_str(&packet_string)
     }
 
     fn _pack_ack_object(&mut self, opcode: u16, sequence: u16) -> Vec<u8> {
@@ -315,17 +266,10 @@ impl Soeprotocol {
     }
 
     pub fn pack_out_of_order_object(&mut self, packet: AckPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
-
         self._pack_ack_object(0x11, packet.sequence)
     }
 
     pub fn pack_ack_object(&mut self, packet: AckPacket) -> Vec<u8> {
-        if packet.error.is_some() {
-            return gen_deserializing_error_json();
-        }
         self._pack_ack_object(0x15, packet.sequence)
     }
 }
@@ -345,6 +289,7 @@ impl Soeprotocol {
             SoeOpcode::SessionRequest => self.pack_session_request(packet),
             SoeOpcode::SessionReply => self.pack_session_reply(packet),
             SoeOpcode::MultiPacket => self.pack_multi(packet),
+            SoeOpcode::Group => self.pack_group(packet),
             SoeOpcode::Disconnect => vec![0, 5],
             SoeOpcode::Ping => vec![0, 6],
             SoeOpcode::NetStatusRequest => self.pack_net_status_request(packet),
@@ -359,8 +304,13 @@ impl Soeprotocol {
     }
 
     pub fn pack_session_request(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: SessionRequestPacket = self.get_session_request_object(packet);
-        self.pack_session_request_object(packet_object)
+        let packet_object: Result<SessionRequestPacket, serde_json::Error> =
+            self.get_session_request_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_session_request_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_session_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -380,13 +330,17 @@ impl Soeprotocol {
             crc_length,
             udp_length,
             protocol,
-            error: None,
         })
     }
 
     pub fn pack_session_reply(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: SessionReplyPacket = self.get_session_reply_object(packet);
-        self.pack_session_reply_object(packet_object)
+        let packet_object: Result<SessionReplyPacket, serde_json::Error> =
+            self.get_session_reply_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_session_reply_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_session_reply_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -408,13 +362,17 @@ impl Soeprotocol {
             crc_length,
             encrypt_method,
             udp_length,
-            error: None,
         })
     }
 
     pub fn pack_net_status_request(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: NetStatusRequestPacket = self.get_net_status_request_object(packet);
-        self.pack_net_status_request_object(packet_object)
+        let packet_object: Result<NetStatusRequestPacket, serde_json::Error> =
+            self.get_net_status_request_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_net_status_request_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_net_status_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -433,8 +391,13 @@ impl Soeprotocol {
     }
 
     pub fn pack_multi(&mut self, packet: String) -> Vec<u8> {
-        let multi_packets: SubBasePackets = self.get_multi_object(packet);
-        self.pack_multi_object(multi_packets)
+        let multi_packets: Result<SubBasePackets, serde_json::Error> =
+            self.get_multi_object(packet);
+        if let Ok(multi_packets) = multi_packets {
+            self.pack_multi_object(multi_packets)
+        } else {
+            gen_deserializing_error_json(multi_packets.err().unwrap())
+        }
     }
 
     pub fn pack_multi_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -443,8 +406,13 @@ impl Soeprotocol {
     }
 
     pub fn pack_group(&mut self, packet: String) -> Vec<u8> {
-        let group_packets: SubBasePackets = self.get_multi_object(packet);
-        self.pack_group_object(group_packets)
+        let group_packets: Result<SubBasePackets, serde_json::Error> =
+            self.get_multi_object(packet);
+        if let Ok(group_packets) = group_packets {
+            self.pack_group_object(group_packets)
+        } else {
+            gen_deserializing_error_json(group_packets.err().unwrap())
+        }
     }
 
     pub fn pack_group_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -453,8 +421,12 @@ impl Soeprotocol {
     }
 
     pub fn pack_data(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: DataPacket = self.get_data_object(packet);
-        self.pack_data_object(packet_object)
+        let packet_object: Result<DataPacket, serde_json::Error> = self.get_data_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_data_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -463,16 +435,16 @@ impl Soeprotocol {
     }
 
     pub fn pack_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
-        self.pack_data_object(DataPacket {
-            data,
-            sequence,
-            error: None,
-        })
+        self.pack_data_object(DataPacket { data, sequence })
     }
 
     pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: DataPacket = self.get_data_object(packet);
-        self.pack_fragment_data_object(packet_object)
+        let packet_object: Result<DataPacket, serde_json::Error> = self.get_data_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_fragment_data_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_fragment_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -481,16 +453,16 @@ impl Soeprotocol {
     }
 
     pub fn pack_fragment_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
-        self.pack_fragment_data_object(DataPacket {
-            data,
-            sequence,
-            error: None,
-        })
+        self.pack_fragment_data_object(DataPacket { data, sequence })
     }
 
     pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: AckPacket = self.get_ack_object(packet);
-        self.pack_out_of_order_object(packet_object)
+        let packet_object: Result<AckPacket, serde_json::Error> = self.get_ack_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_out_of_order_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_out_of_order_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -499,15 +471,16 @@ impl Soeprotocol {
     }
 
     pub fn pack_out_of_order_packet(&mut self, sequence: u16) -> Vec<u8> {
-        self.pack_out_of_order_object(AckPacket {
-            sequence,
-            error: None,
-        })
+        self.pack_out_of_order_object(AckPacket { sequence })
     }
 
     pub fn pack_ack(&mut self, packet: String) -> Vec<u8> {
-        let packet_object: AckPacket = self.get_ack_object(packet);
-        self.pack_ack_object(packet_object)
+        let packet_object: Result<AckPacket, serde_json::Error> = self.get_ack_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_ack_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
     }
 
     pub fn pack_ack_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
@@ -516,10 +489,7 @@ impl Soeprotocol {
     }
 
     pub fn pack_ack_packet(&mut self, sequence: u16) -> Vec<u8> {
-        self.pack_ack_object(AckPacket {
-            sequence,
-            error: None,
-        })
+        self.pack_ack_object(AckPacket { sequence })
     }
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {
@@ -534,6 +504,7 @@ impl Soeprotocol {
             SoeOpcode::SessionRequest => self.parse_session_request(rdr),
             SoeOpcode::SessionReply => self.parse_session_reply(rdr),
             SoeOpcode::MultiPacket => self.parse_multi(rdr),
+            SoeOpcode::Group => self.parse_multi(rdr),
             SoeOpcode::Disconnect => self.parse_disconnect(rdr),
             SoeOpcode::Ping => r#"{"name":"Ping"}"#.to_string(),
             SoeOpcode::NetStatusRequest => self.parse_net_status_request(rdr),
@@ -763,6 +734,8 @@ impl Soeprotocol {
 
 #[cfg(test)]
 mod tests {
+
+    use super::super::protocol_errors::*;
     use super::*;
 
     #[test]
@@ -812,7 +785,8 @@ mod tests {
         let data_to_pack =
             r#"{"crc_length":3,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -856,7 +830,8 @@ mod tests {
         let data_to_pack =
             r#"{"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -909,7 +884,8 @@ mod tests {
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_count": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -962,7 +938,8 @@ mod tests {
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_cozunt": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -1031,7 +1008,8 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"sequednce":1}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -1073,7 +1051,8 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"Ack"}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -1180,7 +1159,8 @@ mod tests {
         169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
         247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -1245,7 +1225,8 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 
     #[test]
@@ -1317,6 +1298,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack);
-        assert_eq!(data_pack, vec![] as Vec<u8>)
+        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
+        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
     }
 }

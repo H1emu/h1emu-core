@@ -5,8 +5,6 @@ pub struct SessionRequestPacket {
     pub crc_length: u32,
     pub udp_length: u32,
     pub protocol: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -16,8 +14,6 @@ pub struct SessionReplyPacket {
     pub crc_length: u8,
     pub encrypt_method: u16,
     pub udp_length: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -29,8 +25,6 @@ pub struct NetStatusReplyPacket {
     pub server_packet_sent: u64,
     pub server_packet_received: u64,
     pub unknown_field: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -46,15 +40,11 @@ pub struct MultiPackablePacket {
 pub struct DataPacket {
     pub data: Vec<u8>,
     pub sequence: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AckPacket {
     pub sequence: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -68,8 +58,6 @@ pub struct NetStatusRequestPacket {
     pub packets_sent: u64,
     pub packets_received: u64,
     pub unknown_field: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -79,13 +67,9 @@ pub struct SubBasePacket {
     pub sequence: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Vec<u8>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SubBasePackets {
     pub sub_packets: Vec<Vec<u8>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>, // used internnaly to identify deserialization errors
 }
