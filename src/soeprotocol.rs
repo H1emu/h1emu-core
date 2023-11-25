@@ -31,6 +31,7 @@ pub enum EncryptMethod {
 }
 
 #[wasm_bindgen]
+#[derive(Debug)]
 pub enum SoeOpcode {
     SessionRequest = 0x01,
     SessionReply = 0x02,
