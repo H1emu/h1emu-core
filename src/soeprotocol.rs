@@ -30,9 +30,43 @@ pub enum EncryptMethod {
     EncryptMethodXor = 0x4,
 }
 
+#[wasm_bindgen]
+pub enum SoeOpcode {
+    SessionRequest = 0x01,
+    SessionReply = 0x02,
+    MultiPacket = 0x03,
+    Disconnect = 0x05,
+    Ping = 0x06,
+    NetStatusRequest = 0x07,
+    NetStatusReply = 0x08,
+    Data = 0x09,
+    DataFragment = 0x0d,
+    OutOfOrder = 0x11,
+    Ack = 0x15,
+    FatalError = 0x1D,
+    Unknown = 0x00,
+}
+
 impl Soeprotocol {
     // rust only
-
+    pub fn get_opcode(&mut self, rdr: &mut Cursor<&Vec<u8>>) -> SoeOpcode {
+        let opcode = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        match opcode {
+            0x01 => SoeOpcode::SessionRequest,
+            0x02 => SoeOpcode::SessionReply,
+            0x03 => SoeOpcode::MultiPacket,
+            0x05 => SoeOpcode::Disconnect,
+            0x06 => SoeOpcode::Ping,
+            0x07 => SoeOpcode::NetStatusRequest,
+            0x08 => SoeOpcode::NetStatusReply,
+            0x09 => SoeOpcode::Data,
+            0x0d => SoeOpcode::DataFragment,
+            0x11 => SoeOpcode::OutOfOrder,
+            0x15 => SoeOpcode::Ack,
+            0x1D => SoeOpcode::FatalError,
+            _ => SoeOpcode::Unknown,
+        }
+    }
     pub fn get_session_request_object(&mut self, packet_string: String) -> SessionRequestPacket {
         serde_json::from_str(&packet_string).unwrap_or_else(|_| SessionRequestPacket {
             session_id: 0,
@@ -305,20 +339,21 @@ impl Soeprotocol {
             wtr: vec![],
         }
     }
-    pub fn pack(&mut self, packet_name: String, packet: String) -> Vec<u8> {
-        match packet_name.as_str() {
-            "SessionRequest" => self.pack_session_request(packet),
-            "SessionReply" => self.pack_session_reply(packet),
-            "MultiPacket" => self.pack_multi(packet),
-            "Disconnect" => vec![0, 5],
-            "Ping" => vec![0, 6],
-            "NetStatusRequest" => self.pack_net_status_request(packet),
-            "NetStatusReply" => self.pack_net_status_reply(packet),
-            "Data" => self.pack_data(packet),
-            "DataFragment" => self.pack_fragment_data(packet),
-            "OutOfOrder" => self.pack_out_of_order(packet),
-            "Ack" => self.pack_ack(packet),
-            _ => vec![],
+    pub fn pack(&mut self, packet_opcode: SoeOpcode, packet: String) -> Vec<u8> {
+        match packet_opcode {
+            SoeOpcode::SessionRequest => self.pack_session_request(packet),
+            SoeOpcode::SessionReply => self.pack_session_reply(packet),
+            SoeOpcode::MultiPacket => self.pack_multi(packet),
+            SoeOpcode::Disconnect => vec![0, 5],
+            SoeOpcode::Ping => vec![0, 6],
+            SoeOpcode::NetStatusRequest => self.pack_net_status_request(packet),
+            SoeOpcode::NetStatusReply => self.pack_net_status_reply(packet),
+            SoeOpcode::Data => self.pack_data(packet),
+            SoeOpcode::DataFragment => self.pack_fragment_data(packet),
+            SoeOpcode::OutOfOrder => self.pack_out_of_order(packet),
+            SoeOpcode::Ack => self.pack_ack(packet),
+            SoeOpcode::FatalError => vec![],
+            SoeOpcode::Unknown => vec![],
         }
     }
 
@@ -488,25 +523,26 @@ impl Soeprotocol {
 
     pub fn parse(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
-        if data.len() < 2 {
-            return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
-        }
-        let opcode = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let opcode: SoeOpcode = if data.len() >= 2 {
+            self.get_opcode(&mut rdr)
+        } else {
+            SoeOpcode::Unknown
+        };
 
         match opcode {
-            0x01 => self.parse_session_request(rdr),
-            0x02 => self.parse_session_reply(rdr),
-            0x03 => self.parse_multi(rdr),
-            0x05 => self.parse_disconnect(rdr),
-            0x06 => r#"{"name":"Ping"}"#.to_string(),
-            0x07 => self.parse_net_status_request(rdr),
-            0x08 => self.parse_net_status_reply(rdr),
-            0x09 => self.parse_data(rdr, opcode),
-            0x0d => self.parse_data(rdr, opcode),
-            0x11 => self.parse_ack(rdr, opcode),
-            0x15 => self.parse_ack(rdr, opcode),
-            0x1D => format!(r#"{{"name":"FatalError","raw":{:?}}}"#, data),
-            _ => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
+            SoeOpcode::SessionRequest => self.parse_session_request(rdr),
+            SoeOpcode::SessionReply => self.parse_session_reply(rdr),
+            SoeOpcode::MultiPacket => self.parse_multi(rdr),
+            SoeOpcode::Disconnect => self.parse_disconnect(rdr),
+            SoeOpcode::Ping => r#"{"name":"Ping"}"#.to_string(),
+            SoeOpcode::NetStatusRequest => self.parse_net_status_request(rdr),
+            SoeOpcode::NetStatusReply => self.parse_net_status_reply(rdr),
+            SoeOpcode::Data => self.parse_data(rdr, opcode as u16),
+            SoeOpcode::DataFragment => self.parse_data(rdr, opcode as u16),
+            SoeOpcode::OutOfOrder => self.parse_ack(rdr, opcode as u16),
+            SoeOpcode::Ack => self.parse_ack(rdr, opcode as u16),
+            SoeOpcode::FatalError => format!(r#"{{"name":"FatalError","raw":{:?}}}"#, data),
+            SoeOpcode::Unknown => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
         }
     }
     fn parse_session_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
@@ -723,6 +759,7 @@ impl Soeprotocol {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn session_request_parse_test() {
@@ -755,7 +792,7 @@ mod tests {
         let data_to_pack =
             r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
         assert_eq!(
             data_pack,
             [
@@ -770,7 +807,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"crc_length":3,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -802,7 +839,7 @@ mod tests {
     fn session_reply_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack);
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
@@ -814,7 +851,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("SessionReply".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -852,8 +889,7 @@ mod tests {
         let data_to_pack =
         r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#
                 .to_string();
-        let data_pack: Vec<u8> =
-            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
         assert_eq!(
             data_pack,
             [
@@ -868,8 +904,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_count": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> =
-            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -907,7 +942,7 @@ mod tests {
         let data_to_pack =
         r#"{"client_packet_received": 1, "client_packet_sent": 2, "client_tick_count": 64348, "name": "NetStatusReply", "server_packet_received": 2, "server_packet_sent": 1, "server_tick_count": 556254524, "unknown_field": 33748}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("NetStatusReply".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusReply, data_to_pack);
         assert_eq!(
             data_pack,
             [
@@ -922,8 +957,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_cozunt": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> =
-            soeprotocol_class.pack("NetStatusRequest".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -939,7 +973,7 @@ mod tests {
     fn ping_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_pack: String = r#"{"name":"Ping"}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Ping".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ping, data_to_pack);
         assert_eq!(data_pack, [0, 6])
     }
 
@@ -984,7 +1018,7 @@ mod tests {
     fn outoforder_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack);
         assert_eq!(data_pack, [0, 17, 0, 1])
     }
 
@@ -992,7 +1026,7 @@ mod tests {
     fn outoforder_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"sequednce":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("OutOfOrder".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -1026,7 +1060,7 @@ mod tests {
     fn ack_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack);
         assert_eq!(data_pack, [0, 21, 0, 1])
     }
 
@@ -1034,7 +1068,7 @@ mod tests {
     fn ack_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"Ack"}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Ack".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -1122,7 +1156,7 @@ mod tests {
         71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
         169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
         247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack);
         assert_eq!(
             data_pack,
             [
@@ -1141,7 +1175,7 @@ mod tests {
         71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
         169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
         247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("MultiPacket".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -1195,7 +1229,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack);
         assert_eq!(
             data_pack,
             [0, 9, 0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
@@ -1206,7 +1240,7 @@ mod tests {
     fn data_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("Data".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 
@@ -1267,7 +1301,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"sequence":2,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("DataFragment".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack);
         assert_eq!(
             data_pack,
             [0, 13, 0, 2, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
@@ -1278,7 +1312,7 @@ mod tests {
     fn data_fragment_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack("DataFragment".to_owned(), data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack);
         assert_eq!(data_pack, vec![] as Vec<u8>)
     }
 }
