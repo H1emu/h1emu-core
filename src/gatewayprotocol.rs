@@ -34,7 +34,8 @@ impl GatewayProtocol {
         let full_opcode = rdr.read_u8().unwrap_or_default();
         let opcode = full_opcode & 0x1f;
         let channel = full_opcode >> 5;
-        let parsed_data = match opcode {
+
+        match opcode {
             0x01 => self.parse_login_request(rdr),
             0x02 => self.parse_login_reply(rdr),
             0x03 => r#"{"name":"Logout"}"#.to_string(),
@@ -47,9 +48,7 @@ impl GatewayProtocol {
                 r#"{{"name":"Unknown","channel":{},"raw":{:?}}}"#,
                 channel, data
             ),
-        };
-
-        return parsed_data;
+        }
     }
 
     pub fn pack_login_request_packet(
@@ -284,14 +283,14 @@ mod tests {
         ]
         .to_vec();
         let parsed_data = gatewayprotocol_class.parse(data);
-        assert!(parsed_data.len() > 0)
+        assert!(!parsed_data.is_empty())
     }
     #[test]
     fn parsing_fail_0_25_0_test() {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data: Vec<u8> = [161, 171, 140, 10, 70, 163, 116, 53].to_vec();
         let parsed_data = gatewayprotocol_class.parse(data);
-        assert!(parsed_data.len() > 0)
+        assert!(!parsed_data.is_empty())
     }
     #[test]
     fn parsing_fail_rnd_test() {

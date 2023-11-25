@@ -493,7 +493,7 @@ impl Soeprotocol {
         }
         let opcode = rdr.read_u16::<BigEndian>().unwrap_or_default();
 
-        return match opcode {
+        match opcode {
             0x01 => self.parse_session_request(rdr),
             0x02 => self.parse_session_reply(rdr),
             0x03 => self.parse_multi(rdr),
@@ -507,7 +507,7 @@ impl Soeprotocol {
             0x15 => self.parse_ack(rdr, opcode),
             0x1D => format!(r#"{{"name":"FatalError","raw":{:?}}}"#, data),
             _ => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
-        };
+        }
     }
     fn parse_session_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if !check_min_size(&rdr, PacketsMinSize::SessionRequest as usize, false) {
@@ -624,7 +624,7 @@ impl Soeprotocol {
             let crc_value =
                 (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
             if crc_value != crc {
-                return gen_crc_error_json(&vec, crc_value, crc);
+                return gen_crc_error_json(vec, crc_value, crc);
             }
             rdr.set_position(2); // reset pos after the opcode
         }
