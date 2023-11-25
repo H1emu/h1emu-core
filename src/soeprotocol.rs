@@ -747,6 +747,9 @@ impl Soeprotocol {
     pub fn get_crc_seed(&self) -> u32 {
         self.crc_seed
     }
+    pub fn set_crc_seed(&mut self, crc_seed: u32) {
+        self.crc_seed = crc_seed;
+    }
     pub fn is_using_crc(&mut self) -> bool {
         self.use_crc
     }
