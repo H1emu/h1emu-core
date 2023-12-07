@@ -79,15 +79,7 @@ impl Soeprotocol {
     }
 
     pub fn pack_ordered_object(&mut self, packet: DataPacket) -> Vec<u8> {
-        self.wtr.clear();
-        self.wtr
-            .write_u16::<BigEndian>(SoeOpcode::Ordered as u16)
-            .unwrap_or_default();
-        self.wtr
-            .write_u16::<BigEndian>(packet.sequence)
-            .unwrap_or_default();
-        self.wtr.append(&mut packet.data.clone());
-        self.wtr.clone()
+        self._pack_data_object(SoeOpcode::Ordered as u16, packet)
     }
 
     pub fn pack_session_request_object(&mut self, packet: SessionRequestPacket) -> Vec<u8> {
