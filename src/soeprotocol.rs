@@ -45,6 +45,7 @@ pub enum SoeOpcode {
     OutOfOrder = 0x11,
     Ack = 0x15,
     Group = 0x19,
+    Ordered = 0x1B,
     FatalError = 0x1D,
     Unknown = 0x00,
 }
@@ -65,6 +66,7 @@ impl Soeprotocol {
             0x0d => SoeOpcode::DataFragment,
             0x11 => SoeOpcode::OutOfOrder,
             0x15 => SoeOpcode::Ack,
+            0x1B => SoeOpcode::Ordered,
             0x1D => SoeOpcode::FatalError,
             _ => SoeOpcode::Unknown,
         }
@@ -298,6 +300,7 @@ impl Soeprotocol {
             SoeOpcode::DataFragment => self.pack_fragment_data(packet),
             SoeOpcode::OutOfOrder => self.pack_out_of_order(packet),
             SoeOpcode::Ack => self.pack_ack(packet),
+            SoeOpcode::Ordered => todo!(),
             SoeOpcode::FatalError => vec![],
             SoeOpcode::Unknown => vec![],
         }
@@ -513,9 +516,38 @@ impl Soeprotocol {
             SoeOpcode::DataFragment => self.parse_data(rdr, opcode as u16),
             SoeOpcode::OutOfOrder => self.parse_ack(rdr, opcode as u16),
             SoeOpcode::Ack => self.parse_ack(rdr, opcode as u16),
+            SoeOpcode::Ordered => self.parse_ordered(rdr),
             SoeOpcode::FatalError => format!(r#"{{"name":"FatalError","raw":{:?}}}"#, data),
             SoeOpcode::Unknown => format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data),
         }
+    }
+
+    fn parse_ordered(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
+        if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize, self.use_crc) {
+            return gen_size_error_json(rdr);
+        }
+        let order = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let data_end: u64 = get_data_end(&rdr, self.use_crc);
+        let mut crc: u16 = 0;
+        if self.use_crc {
+            rdr.set_position(data_end);
+            crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        }
+        let vec = rdr.get_ref().to_vec();
+        let data = &vec[4..data_end as usize];
+        // check that crc value is correct
+        if self.use_crc {
+            let packet_without_crc = &vec[0..data_end as usize];
+            let crc_value =
+                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
+            if crc_value != crc {
+                return gen_crc_error_json(&vec, crc_value, crc);
+            }
+        }
+        format!(
+            r#"{{"name":"Ordered","order":{},"data":{:?}}}"#,
+            order, data
+        )
     }
     fn parse_session_request(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
         if !check_min_size(&rdr, PacketsMinSize::SessionRequest as usize, false) {
@@ -734,6 +766,8 @@ impl Soeprotocol {
 
 #[cfg(test)]
 mod tests {
+
+    use super::super::crc::append_crc;
 
     use super::super::protocol_errors::*;
     use super::*;
@@ -1206,6 +1240,46 @@ mod tests {
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 24124, "given_crc": 24125, "name": "Error", "raw": [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
+    }
+
+    #[test]
+    fn ordered_data_parse_test() {
+        let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
+        let data_to_parse: [u8; 6] = [0, 27, 147, 127, 1, 0];
+        let data_parsed: serde_json::Value =
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
+                .unwrap_or_default();
+        assert_eq!(data_parsed, succesful_data)
+    }
+
+    #[test]
+    fn ordered_data_with_crc_test() {
+        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
+        let mut data_to_parse: Vec<u8> = [0, 27, 147, 127, 1, 0].to_vec();
+        append_crc(&mut data_to_parse, 0);
+        let data_parsed: serde_json::Value =
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
+                .unwrap_or_default();
+        assert_eq!(data_parsed, succesful_data)
+    }
+
+    #[test]
+    fn ordered_data_with_crc_test_fail() {
+        let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
+        let data_to_parse: [u8; 6] = [0, 27, 147, 127, 1, 1];
+        let data_parsed: serde_json::Value =
+            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+                .unwrap_or_default();
+        let succesful_data: serde_json::Value =
+            serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
+                .unwrap_or_default();
+        assert_ne!(data_parsed, succesful_data)
     }
 
     #[test]
