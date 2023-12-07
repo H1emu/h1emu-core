@@ -78,9 +78,23 @@ impl Soeprotocol {
         serde_json::from_str(&packet_string)
     }
 
+    pub fn pack_ordered_object(&mut self, packet: DataPacket) -> Vec<u8> {
+        self.wtr.clear();
+        self.wtr
+            .write_u16::<BigEndian>(SoeOpcode::Ordered as u16)
+            .unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(packet.sequence)
+            .unwrap_or_default();
+        self.wtr.append(&mut packet.data.clone());
+        self.wtr.clone()
+    }
+
     pub fn pack_session_request_object(&mut self, packet: SessionRequestPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x01).unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(SoeOpcode::SessionRequest as u16)
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.crc_length)
             .unwrap_or_default();
@@ -105,7 +119,9 @@ impl Soeprotocol {
 
     pub fn pack_session_reply_object(&mut self, packet: SessionReplyPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x02).unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(SoeOpcode::SessionReply as u16)
+            .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.session_id)
             .unwrap_or_default();
@@ -132,7 +148,9 @@ impl Soeprotocol {
 
     pub fn pack_net_status_request_object(&mut self, packet: NetStatusRequestPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x07).unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(SoeOpcode::NetStatusRequest as u16)
+            .unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap_or_default();
@@ -179,7 +197,9 @@ impl Soeprotocol {
 
     pub fn pack_net_status_reply_object(&mut self, packet: NetStatusReplyPacket) -> Vec<u8> {
         self.wtr.clear();
-        self.wtr.write_u16::<BigEndian>(0x08).unwrap_or_default();
+        self.wtr
+            .write_u16::<BigEndian>(SoeOpcode::NetStatusReply as u16)
+            .unwrap_or_default();
         self.wtr
             .write_u16::<BigEndian>(packet.client_tick_count)
             .unwrap_or_default();
@@ -300,10 +320,23 @@ impl Soeprotocol {
             SoeOpcode::DataFragment => self.pack_fragment_data(packet),
             SoeOpcode::OutOfOrder => self.pack_out_of_order(packet),
             SoeOpcode::Ack => self.pack_ack(packet),
-            SoeOpcode::Ordered => todo!(),
+            SoeOpcode::Ordered => self.pack_ordered(packet),
             SoeOpcode::FatalError => vec![],
             SoeOpcode::Unknown => vec![],
         }
+    }
+
+    pub fn pack_ordered(&mut self, packet: String) -> Vec<u8> {
+        let packet_object: Result<DataPacket, serde_json::Error> = self.get_data_object(packet);
+        if let Ok(packet_object) = packet_object {
+            self.pack_ordered_object(packet_object)
+        } else {
+            gen_deserializing_error_json(packet_object.err().unwrap())
+        }
+    }
+
+    pub fn pack_ordered_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
+        self.pack_ordered_object(DataPacket { data, sequence })
     }
 
     pub fn pack_session_request(&mut self, packet: String) -> Vec<u8> {
@@ -1291,6 +1324,18 @@ mod tests {
         assert_eq!(
             data_pack,
             [0, 9, 0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
+        )
+    }
+
+    #[test]
+    fn data_ordered_pack_test() {
+        let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
+        let data_to_pack =
+            r#"{"sequence":1,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ordered, data_to_pack);
+        assert_eq!(
+            data_pack,
+            [0, 27, 0, 1, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
         )
     }
 

@@ -202,6 +202,8 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             .to_owned();
     let data_to_pack =
         r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
+    let data_ordered_to_pack =
+        r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
     let data_fragment_to_pack =
         r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
 
@@ -277,11 +279,25 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     c.bench_function("data_to_pack", |b| {
         b.iter(|| soeprotocol_class.pack(SoeOpcode::Data, black_box(data_to_pack.to_string())))
     });
+    c.bench_function("data_ordered_to_pack", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                SoeOpcode::Ordered,
+                black_box(data_ordered_to_pack.to_string()),
+            )
+        })
+    });
     let data_to_pack_object = soeprotocol_class
         .get_data_object(data_to_pack.to_string())
         .unwrap();
     c.bench_function("data_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_data_object(data_to_pack_object.clone()))
+    });
+    let data_ordered_to_pack_object = soeprotocol_class
+        .get_data_object(data_to_pack.to_string())
+        .unwrap();
+    c.bench_function("data_ordered_to_pack_from_object", |b| {
+        b.iter(|| soeprotocol_class.pack_ordered_object(data_ordered_to_pack_object.clone()))
     });
     c.bench_function("data_fragment_to_pack", |b| {
         b.iter(|| {
@@ -337,6 +353,14 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
     });
     c.bench_function("data_to_pack_crc", |b| {
         b.iter(|| soeprotocol_class.pack(SoeOpcode::Data, black_box(data_to_pack.to_string())))
+    });
+    c.bench_function("data_ordered_to_pack_crc", |b| {
+        b.iter(|| {
+            soeprotocol_class.pack(
+                SoeOpcode::Ordered,
+                black_box(data_ordered_to_pack.to_string()),
+            )
+        })
     });
     c.bench_function("data_fragment_to_pack_crc", |b| {
         b.iter(|| {
