@@ -226,9 +226,9 @@ impl Soeprotocol {
     pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
-        for packet in packets {
+        for mut packet in packets {
             write_data_length(&mut self.wtr, packet.len());
-            self.wtr.append(&mut packet.clone());
+            self.wtr.append(&mut packet);
         }
         self.wtr.clone()
     }
