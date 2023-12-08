@@ -1,5 +1,122 @@
+use super::soeprotocol::SoeOpcode;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+
+// #[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum SoePacket {
+    SessionRequestPacket(SessionRequestPacket),
+    SessionReplyPacket(SessionReplyPacket),
+    NetStatusReplyPacket(NetStatusReplyPacket),
+    MultiPackablePacket(MultiPackablePacket),
+    DataPacket(DataPacket),
+    AckPacket(AckPacket),
+    NetStatusRequestPacket(NetStatusRequestPacket),
+    GroupedPackets(GroupedPackets),
+    PingPacket(PingPacket),
+    DisconnectPacket(DisconnectPacket),
+    UnknownPacket(UnknownPacket),
+}
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SoePacketParsed {
+    pub opcode: SoeOpcode,
+    packet: SoePacket,
+}
+#[wasm_bindgen]
+impl SoePacketParsed {
+    pub fn get_opcode(&self) -> SoeOpcode {
+        self.opcode
+    }
+    pub fn get_session_request_packet(&self) -> Option<SessionRequestPacket> {
+        match &self.packet {
+            SoePacket::SessionRequestPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_session_reply_packet(&self) -> Option<SessionReplyPacket> {
+        match &self.packet {
+            SoePacket::SessionReplyPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_net_status_reply_packet(&self) -> Option<NetStatusReplyPacket> {
+        match &self.packet {
+            SoePacket::NetStatusReplyPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_data_packet(&self) -> Option<DataPacket> {
+        match &self.packet {
+            SoePacket::DataPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_ack_packet(&self) -> Option<AckPacket> {
+        match &self.packet {
+            SoePacket::AckPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_net_status_request_packet(&self) -> Option<NetStatusRequestPacket> {
+        match &self.packet {
+            SoePacket::NetStatusRequestPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_grouped_packets(&self) -> Option<GroupedPackets> {
+        match &self.packet {
+            SoePacket::GroupedPackets(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_unknown_packet(&self) -> Option<UnknownPacket> {
+        match &self.packet {
+            SoePacket::UnknownPacket(packet) => Some(packet.clone()),
+            _ => None,
+        }
+    }
+}
+impl SoePacketParsed {
+    pub fn new(opcode: SoeOpcode, packet: SoePacket) -> Self {
+        Self { opcode, packet }
+    }
+    pub fn get_packet(&self) -> SoePacket {
+        self.packet.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UnknownPacket {}
+
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PingPacket {}
+#[wasm_bindgen]
+impl PingPacket {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DisconnectPacket {
+    pub session_id: u32,
+    reason: String,
+}
+#[wasm_bindgen]
+impl DisconnectPacket {
+    #[wasm_bindgen(constructor)]
+    pub fn new(session_id: u32, reason: String) -> Self {
+        Self { session_id, reason }
+    }
+    pub fn get_reason(&self) -> String {
+        self.reason.clone()
+    }
+}
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SessionRequestPacket {
@@ -250,43 +367,11 @@ impl NetStatusRequestPacket {
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SubBasePacket {
-    name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sequence: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Vec<u8>>,
+pub struct GroupedPackets {
+    sub_packets: Vec<SoePacket>,
 }
 #[wasm_bindgen]
-impl SubBasePacket {
-    #[wasm_bindgen(constructor)]
-    pub fn new(name: String, sequence: Option<u16>, data: Option<Vec<u8>>) -> Self {
-        Self {
-            name,
-            sequence,
-            data,
-        }
-    }
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-    pub fn get_sequence(&self) -> Option<u16> {
-        self.sequence
-    }
-}
-impl SubBasePacket {
-    pub fn get_data(&self) -> &Option<Vec<u8>> {
-        &self.data
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SubBasePackets {
-    sub_packets: Vec<Vec<u8>>,
-}
-#[wasm_bindgen]
-impl SubBasePackets {
+impl GroupedPackets {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
@@ -294,11 +379,11 @@ impl SubBasePackets {
         }
     }
 }
-impl SubBasePackets {
-    pub fn add_sub_packet(&mut self, sub_packet: Vec<u8>) {
-        self.sub_packets.push(sub_packet);
+impl GroupedPackets {
+    pub fn add_packet(&mut self, packet: SoePacket) {
+        self.sub_packets.push(packet);
     }
-    pub fn get_sub_packets(&self) -> &Vec<Vec<u8>> {
+    pub fn get_packets(&self) -> &Vec<SoePacket> {
         &self.sub_packets
     }
 }
