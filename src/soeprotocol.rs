@@ -543,6 +543,57 @@ impl Soeprotocol {
                 SoeOpcode::SessionRequest,
                 SoePacket::SessionRequestPacket(self.parse_session_request(rdr)),
             ),
+            SoeOpcode::SessionReply => SoePacketParsed::new(
+                SoeOpcode::SessionReply,
+                SoePacket::SessionReplyPacket(self.parse_session_reply(rdr)),
+            ),
+            SoeOpcode::MultiPacket => SoePacketParsed::new(
+                SoeOpcode::MultiPacket,
+                SoePacket::GroupedPackets(self.parse_multi(rdr)),
+            ),
+            SoeOpcode::Disconnect => SoePacketParsed::new(
+                SoeOpcode::Disconnect,
+                SoePacket::DisconnectPacket(self.parse_disconnect(rdr)),
+            ),
+            SoeOpcode::Ping => {
+                SoePacketParsed::new(SoeOpcode::Ping, SoePacket::PingPacket(PingPacket {}))
+            }
+            SoeOpcode::NetStatusRequest => SoePacketParsed::new(
+                SoeOpcode::NetStatusRequest,
+                SoePacket::NetStatusRequestPacket(self.parse_net_status_request(rdr)),
+            ),
+            SoeOpcode::NetStatusReply => SoePacketParsed::new(
+                SoeOpcode::NetStatusReply,
+                SoePacket::NetStatusReplyPacket(self.parse_net_status_reply(rdr)),
+            ),
+            SoeOpcode::Data => SoePacketParsed::new(
+                SoeOpcode::Data,
+                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+            ),
+            SoeOpcode::DataFragment => SoePacketParsed::new(
+                SoeOpcode::DataFragment,
+                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+            ),
+            SoeOpcode::OutOfOrder => SoePacketParsed::new(
+                SoeOpcode::OutOfOrder,
+                SoePacket::AckPacket(self.parse_ack(rdr, opcode as u16)),
+            ),
+            SoeOpcode::Ack => SoePacketParsed::new(
+                SoeOpcode::Ack,
+                SoePacket::AckPacket(self.parse_ack(rdr, opcode as u16)),
+            ),
+            SoeOpcode::Group => SoePacketParsed::new(
+                SoeOpcode::Group,
+                SoePacket::GroupedPackets(self.parse_multi(rdr)),
+            ),
+            SoeOpcode::Ordered => SoePacketParsed::new(
+                SoeOpcode::Ordered,
+                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+            ),
+            SoeOpcode::FatalError => SoePacketParsed::new(
+                SoeOpcode::FatalError,
+                SoePacket::FatalErrorPacket(FatalErrorPacket {}),
+            ),
         }
     }
 
@@ -676,6 +727,7 @@ impl Soeprotocol {
     }
 
     fn parse_multi(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> GroupedPackets {
+        todo!();
         // check size
         // if !check_min_size(
         //     &rdr,

@@ -14,6 +14,7 @@ pub enum SoePacket {
     NetStatusRequestPacket(NetStatusRequestPacket),
     GroupedPackets(GroupedPackets),
     PingPacket(PingPacket),
+    FatalErrorPacket(FatalErrorPacket),
     DisconnectPacket(DisconnectPacket),
     UnknownPacket(UnknownPacket),
 }
@@ -94,7 +95,10 @@ pub struct UnknownPacket {}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PingPacket {}
 #[wasm_bindgen]
-impl PingPacket {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FatalErrorPacket {}
+#[wasm_bindgen]
+impl FatalErrorPacket {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {}
