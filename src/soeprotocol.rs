@@ -227,7 +227,7 @@ impl Soeprotocol {
         serde_json::from_str(&packet_string)
     }
 
-    pub fn group_packets(&mut self, opcode: u16, packets: &Vec<SoePacket>) -> Vec<u8> {
+    pub fn group_packets(&mut self, opcode: u16, packets: &Vec<Vec<u8>>) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
         for packet in packets {
@@ -240,14 +240,23 @@ impl Soeprotocol {
     }
 
     pub fn pack_group_object(&mut self, group_packet: GroupedPackets) -> Vec<u8> {
-        self.group_packets(SoeOpcode::Group as u16, group_packet.get_packets())
+        let soe_packets = group_packet.get_packets();
+        let mut packets: Vec<Vec<u8>> = vec![];
+        for packet in soe_packets {
+            // TODO: when doing pack side
+            todo!();
+        }
+        self.group_packets(SoeOpcode::Group as u16, &packets)
     }
 
     pub fn pack_multi_object(&mut self, multi_packet: GroupedPackets) -> Vec<u8> {
-        self.group_packets(
-            SoeOpcode::MultiPacket as u16,
-            multi_packet.get_sub_packets(),
-        )
+        let soe_packets = multi_packet.get_packets();
+        let mut packets: Vec<Vec<u8>> = vec![];
+        for packet in soe_packets {
+            // TODO: when doing pack side
+            todo!();
+        }
+        self.group_packets(SoeOpcode::MultiPacket as u16, &packets)
     }
 
     pub fn get_data_object(
@@ -666,10 +675,7 @@ impl Soeprotocol {
         // }
         let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
         let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap_or_default());
-        DisconnectPacket {
-            session_id,
-            reason: reason.to_string(),
-        }
+        DisconnectPacket::new(session_id, reason)
     }
 
     fn parse_net_status_request(
@@ -727,7 +733,6 @@ impl Soeprotocol {
     }
 
     fn parse_multi(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> GroupedPackets {
-        todo!();
         // check size
         // if !check_min_size(
         //     &rdr,
@@ -763,20 +768,15 @@ impl Soeprotocol {
                 extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
             rdr.set_position(sub_packet_data_length as u64 + rdr.position());
             let sub_packet_parsed = self.parse(sub_packet_data);
-            match (sub_packet_parsed.opcode) {
-                SoeOpcode::Unknown => {
-                    // return gen_corruption_error_json(rdr, sub_packet_data_length, data_end);
-                }
-                SoeOpcode::Data => {
-                    let sub_packet: DataPacket = sub_packet_parsed.get_data_packet().unwrap();
-                    grouped_packet.add_packet(sub_packet);
-                }
+            grouped_packet.add_packet(sub_packet_parsed.get_packet());
+            if rdr.position() == data_end {
+                break;
             }
-            grouped_packet.add_sub_packet(sub_packet);
         }
         if was_crc_enabled {
             self.enable_crc();
         }
+        grouped_packet
     }
 
     fn parse_data(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> DataPacket {
