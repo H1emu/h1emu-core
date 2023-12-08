@@ -52,7 +52,7 @@ path = "src/lib.rs"
 
 [profile.release]
 lto = true
-strip = true
+# strip = true
 opt-level = 3
 
 [package.metadata.wasm-pack.profile.release]

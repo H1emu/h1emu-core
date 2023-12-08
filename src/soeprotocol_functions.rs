@@ -91,7 +91,7 @@ pub fn extract_subpacket_data(
 pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
     wtr.write_u16::<BigEndian>(data_packet.sequence)
         .unwrap_or_default();
-    wtr.append(&mut data_packet.data);
+    wtr.append(data_packet.get_data());
 }
 
 #[cfg(test)]
@@ -104,10 +104,7 @@ mod tests {
         ]
         .to_vec();
         let mut wtr = vec![];
-        let mut data_packet = super::DataPacket {
-            data: data_to_pack,
-            sequence: 0,
-        };
+        let mut data_packet = super::DataPacket::new(data_to_pack, 0);
         super::write_packet_data(&mut wtr, &mut data_packet);
         assert_eq!(
             wtr,

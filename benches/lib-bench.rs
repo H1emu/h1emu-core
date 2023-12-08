@@ -18,10 +18,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     ]
     .to_vec();
     let wtr = vec![];
-    let mut data_packet = DataPacket {
-        data: data_to_pack,
-        sequence: 0,
-    };
+    let mut data_packet = DataPacket::new(data_to_pack, 0);
 
     c.bench_function("write_packet_data_crc", |b| {
         b.iter(|| write_packet_data(black_box(&mut wtr.to_owned()), black_box(&mut data_packet)))
@@ -31,10 +28,7 @@ fn soeprotocol_utils_benchmarks(c: &mut Criterion) {
     ]
     .to_vec();
     let wtr = vec![];
-    let mut data_packet = DataPacket {
-        data: data_to_pack,
-        sequence: 0,
-    };
+    let mut data_packet = DataPacket::new(data_to_pack, 0);
     c.bench_function("write_packet_data", |b| {
         b.iter(|| write_packet_data(black_box(&mut wtr.to_owned()), black_box(&mut data_packet)))
     });
@@ -485,16 +479,16 @@ fn rc4_benchmark(c: &mut Criterion) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    crc_legacy_benchmark(c);
-    crc_benchmark(c);
-    utils_benchmark(c);
-    jooat_benchmark(c);
-    rc4_benchmark(c);
+    // crc_legacy_benchmark(c);
+    // crc_benchmark(c);
+    // utils_benchmark(c);
+    // jooat_benchmark(c);
+    // rc4_benchmark(c);
     soeprotocol_parse_benchmarks(c);
     soeprotocol_pack_benchmarks(c);
     soeprotocol_utils_benchmarks(c);
-    gatewayprotocol_parse_benchmarks(c);
-    gatewayprotocol_pack_benchmarks(c);
+    // gatewayprotocol_parse_benchmarks(c);
+    // gatewayprotocol_pack_benchmarks(c);
 }
 
 criterion_group!(benches, criterion_benchmark);

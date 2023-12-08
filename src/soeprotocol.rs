@@ -97,7 +97,7 @@ impl Soeprotocol {
             .write_u32::<BigEndian>(packet.udp_length)
             .unwrap_or_default();
         self.wtr.append(&mut u8_from_str_nul_utf8_unchecked(
-            packet.protocol.as_str(),
+            packet.get_protocol().as_str(),
         ));
         self.wtr.clone()
     }
@@ -223,22 +223,27 @@ impl Soeprotocol {
         serde_json::from_str(&packet_string)
     }
 
-    pub fn group_packets(&mut self, opcode: u16, packets: Vec<Vec<u8>>) -> Vec<u8> {
+    pub fn group_packets(&mut self, opcode: u16, packets: &Vec<Vec<u8>>) -> Vec<u8> {
         self.wtr.clear();
         self.wtr.write_u16::<BigEndian>(opcode).unwrap_or_default();
-        for mut packet in packets {
+        for packet in packets {
             write_data_length(&mut self.wtr, packet.len());
+            // FIXME: shitty clone
+            let mut packet = packet.clone();
             self.wtr.append(&mut packet);
         }
         self.wtr.clone()
     }
 
     pub fn pack_group_object(&mut self, group_packet: SubBasePackets) -> Vec<u8> {
-        self.group_packets(SoeOpcode::Group as u16, group_packet.sub_packets)
+        self.group_packets(SoeOpcode::Group as u16, group_packet.get_sub_packets())
     }
 
     pub fn pack_multi_object(&mut self, multi_packet: SubBasePackets) -> Vec<u8> {
-        self.group_packets(SoeOpcode::MultiPacket as u16, multi_packet.sub_packets)
+        self.group_packets(
+            SoeOpcode::MultiPacket as u16,
+            multi_packet.get_sub_packets(),
+        )
     }
 
     pub fn get_data_object(
@@ -328,7 +333,7 @@ impl Soeprotocol {
     }
 
     pub fn pack_ordered_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
-        self.pack_ordered_object(DataPacket { data, sequence })
+        self.pack_ordered_object(DataPacket::new(data, sequence))
     }
 
     pub fn pack_session_request(&mut self, packet: String) -> Vec<u8> {
@@ -353,12 +358,9 @@ impl Soeprotocol {
         udp_length: u32,
         protocol: String,
     ) -> Vec<u8> {
-        self.pack_session_request_object(SessionRequestPacket {
-            session_id,
-            crc_length,
-            udp_length,
-            protocol,
-        })
+        self.pack_session_request_object(SessionRequestPacket::new(
+            session_id, crc_length, udp_length, protocol,
+        ))
     }
 
     pub fn pack_session_reply(&mut self, packet: String) -> Vec<u8> {
@@ -463,7 +465,7 @@ impl Soeprotocol {
     }
 
     pub fn pack_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
-        self.pack_data_object(DataPacket { data, sequence })
+        self.pack_data_object(DataPacket::new(data, sequence))
     }
 
     pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
@@ -481,7 +483,7 @@ impl Soeprotocol {
     }
 
     pub fn pack_fragment_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
-        self.pack_fragment_data_object(DataPacket { data, sequence })
+        self.pack_fragment_data_object(DataPacket::new(data, sequence))
     }
 
     pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
