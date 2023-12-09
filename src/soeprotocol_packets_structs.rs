@@ -160,6 +160,7 @@ pub struct SessionReplyPacket {
     pub session_id: u32,
     pub crc_seed: u32,
     pub crc_length: u8,
+    // TODO: use the EncryptionMethod enum
     pub encrypt_method: u16,
     pub udp_length: u32,
 }

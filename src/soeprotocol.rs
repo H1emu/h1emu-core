@@ -606,33 +606,6 @@ impl Soeprotocol {
         }
     }
 
-    fn parse_ordered(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> String {
-        if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize, self.use_crc) {
-            return gen_size_error_json(rdr);
-        }
-        let order = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        let data_end: u64 = get_data_end(&rdr, self.use_crc);
-        let mut crc: u16 = 0;
-        if self.use_crc {
-            rdr.set_position(data_end);
-            crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        }
-        let vec = rdr.get_ref().to_vec();
-        let data = &vec[4..data_end as usize];
-        // check that crc value is correct
-        if self.use_crc {
-            let packet_without_crc = &vec[0..data_end as usize];
-            let crc_value =
-                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
-            if crc_value != crc {
-                return gen_crc_error_json(&vec, crc_value, crc);
-            }
-        }
-        format!(
-            r#"{{"name":"Ordered","order":{},"data":{:?}}}"#,
-            order, data
-        )
-    }
     fn parse_session_request(
         &mut self,
         mut rdr: Cursor<&std::vec::Vec<u8>>,
