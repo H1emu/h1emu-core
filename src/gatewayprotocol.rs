@@ -1,4 +1,5 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -6,6 +7,19 @@ use super::gatewayprotocol_packets_structs::*;
 use super::lib_utils::read_prefixed_string_le;
 
 #[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum GatewayOpcode {
+    LoginRequest = 0x01,
+    LoginReply = 0x02,
+    Logout = 0x03,
+    ForceDisconnect = 0x04,
+    TunnelDataClient = 0x05,
+    TunnelDataServer = 0x06,
+    ChannelIsRoutable = 0x07,
+    ChannelIsNotRoutable = 0x08,
+}
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GatewayChannels {
     Zone = 0,
     World = 1,
@@ -134,11 +148,7 @@ impl GatewayProtocol {
     fn parse_tunnel_data(&mut self, mut data: std::vec::Vec<u8>) -> String {
         let channel = data.remove(0) >> 5;
         let tunnel_data = data;
-        let packet = TunnelPacket {
-            name: "TunnelPacket",
-            channel,
-            tunnel_data,
-        };
+        let packet = TunnelPacket::new(channel, tunnel_data);
         serde_json::to_string(&packet).unwrap_or_default()
     }
     fn parse_channel_is_routable(&mut self, mut _rdr: Cursor<&std::vec::Vec<u8>>) -> String {
