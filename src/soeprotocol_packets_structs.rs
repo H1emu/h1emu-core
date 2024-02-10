@@ -1,4 +1,7 @@
+use crate::soeprotocol_functions::write_packet_data;
+
 use super::soeprotocol::SoeOpcode;
+use byteorder::{BigEndian, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -268,16 +271,28 @@ pub struct MultiPackablePacket {
 #[wasm_bindgen]
 pub struct DataPacket {
     data: Vec<u8>,
+    pub opcode: u16,
     pub sequence: u16,
 }
 #[wasm_bindgen]
 impl DataPacket {
     #[wasm_bindgen(constructor)]
-    pub fn new(data: Vec<u8>, sequence: u16) -> Self {
-        Self { data, sequence }
+    pub fn new(data: Vec<u8>, sequence: u16, opcode: u16) -> Self {
+        Self {
+            data,
+            sequence,
+            opcode,
+        }
     }
     pub fn get_sequence(&self) -> u16 {
         self.sequence
+    }
+    #[wasm_bindgen]
+    pub fn build(&mut self) -> Vec<u8> {
+        let mut wtr: Vec<u8> = vec![];
+        wtr.write_u16::<BigEndian>(self.opcode).unwrap_or_default();
+        write_packet_data(&mut wtr, self);
+        wtr
     }
 }
 impl DataPacket {
@@ -289,16 +304,26 @@ impl DataPacket {
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AckPacket {
+    pub opcode: u16,
     pub sequence: u16,
 }
 #[wasm_bindgen]
 impl AckPacket {
     #[wasm_bindgen(constructor)]
-    pub fn new(sequence: u16) -> Self {
-        Self { sequence }
+    pub fn new(opcode: u16, sequence: u16) -> Self {
+        Self { opcode, sequence }
     }
     pub fn get_sequence(&self) -> u16 {
         self.sequence
+    }
+
+    #[wasm_bindgen]
+    pub fn build(&self) -> Vec<u8> {
+        let mut wtr: Vec<u8> = vec![];
+        wtr.write_u16::<BigEndian>(self.opcode).unwrap_or_default();
+        wtr.write_u16::<BigEndian>(self.sequence)
+            .unwrap_or_default();
+        wtr
     }
 }
 

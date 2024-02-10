@@ -96,6 +96,7 @@ pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
 
 #[cfg(test)]
 mod tests {
+    use crate::soeprotocol::SoeOpcode;
 
     #[test]
     fn write_packet_data_test() {
@@ -104,7 +105,7 @@ mod tests {
         ]
         .to_vec();
         let mut wtr = vec![];
-        let mut data_packet = super::DataPacket::new(data_to_pack, 0);
+        let mut data_packet = super::DataPacket::new(data_to_pack, 0, SoeOpcode::Data as u16);
         super::write_packet_data(&mut wtr, &mut data_packet);
         assert_eq!(
             wtr,
