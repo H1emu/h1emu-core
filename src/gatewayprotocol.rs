@@ -1,10 +1,9 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::ReadBytesExt;
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
 use super::gatewayprotocol_packets_structs::*;
-use super::lib_utils::read_prefixed_string_le;
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
