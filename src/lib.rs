@@ -4,8 +4,6 @@ pub mod crc;
 mod crc_table;
 #[cfg(feature = "gatewayprotocol")]
 pub mod gatewayprotocol;
-#[cfg(feature = "gatewayprotocol")]
-pub mod gatewayprotocol_packets_structs;
 #[cfg(feature = "jenkins")]
 pub mod jenkins;
 pub mod lib_utils;
