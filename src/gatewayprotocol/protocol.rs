@@ -3,7 +3,16 @@ use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
-use super::gatewayprotocol_packets_structs::*;
+use super::{
+    channel_is_not_routable::ChannelIsNotRoutablePacket,
+    channel_is_routable::ChannelIsRoutablePacket,
+    force_disconnect::ForceDisconnectPacket,
+    gatewayprotocol_packets_structs::{GatewayPacket, GatewayPacketParsed, UnknownGatewayPacket},
+    login_reply::LoginReplyPacket,
+    login_request::LoginRequestPacket,
+    logout::LogoutPacket,
+    tunnel::TunnelPacket,
+};
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
@@ -52,9 +61,12 @@ impl GatewayProtocol {
     }
     pub fn parse(&mut self, data: Vec<u8>) -> GatewayPacketParsed {
         let mut rdr = Cursor::new(&data);
-        // if data.len() < 2 {
-        //     return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
-        // }
+        if data.len() < 2 {
+            return GatewayPacketParsed::new(
+                GatewayOpcode::Unknown,
+                GatewayPacket::Unknown(UnknownGatewayPacket {}),
+            );
+        }
         let full_opcode = rdr.read_u8().unwrap_or_default();
         let opcode = full_opcode & 0x1f;
         // let channel = full_opcode >> 5;
