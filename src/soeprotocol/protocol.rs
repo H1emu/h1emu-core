@@ -103,13 +103,12 @@ impl Soeprotocol {
                 SoeOpcode::SessionReply,
                 SoePacket::SessionReplyPacket(self.parse_session_reply(rdr)),
             ),
-            SoeOpcode::MultiPacket => SoePacketParsed::new(
-                SoeOpcode::MultiPacket,
-                SoePacket::GroupedPackets(self.parse_multi(rdr)),
-            ),
+            SoeOpcode::MultiPacket => 
+                      SoePacketParsed::new(SoeOpcode::MultiPacket,self.parse_multi(rdr))
+            ,
             SoeOpcode::Disconnect => SoePacketParsed::new(
                 SoeOpcode::Disconnect,
-                SoePacket::DisconnectPacket(self.parse_disconnect(rdr)),
+                SoePacket::DisconnectPacket(DisconnectPacket::from(rdr)),
             ),
             SoeOpcode::Ping => {
                 SoePacketParsed::new(SoeOpcode::Ping, SoePacket::PingPacket(PingPacket {}))
@@ -124,34 +123,32 @@ impl Soeprotocol {
             ),
             SoeOpcode::Data => SoePacketParsed::new(
                 SoeOpcode::Data,
-                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+                SoePacket::DataPacket(DataPacket::from(rdr, opcode as u16, self.use_crc)),
             ),
             SoeOpcode::DataFragment => SoePacketParsed::new(
                 SoeOpcode::DataFragment,
-                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+                SoePacket::DataPacket(DataPacket::from(rdr, opcode as u16, self.use_crc)),
             ),
             SoeOpcode::OutOfOrder => SoePacketParsed::new(
                 SoeOpcode::OutOfOrder,
-                SoePacket::AckPacket(self.parse_ack(rdr, opcode as u16)),
+                SoePacket::AckPacket(AckPacket::from(rdr, opcode as u16)),
             ),
             SoeOpcode::Ack => SoePacketParsed::new(
                 SoeOpcode::Ack,
-                SoePacket::AckPacket(self.parse_ack(rdr, opcode as u16)),
+                SoePacket::AckPacket(AckPacket::from(rdr, opcode as u16)),
             ),
-            SoeOpcode::Group => SoePacketParsed::new(
-                SoeOpcode::Group,
-                SoePacket::GroupedPackets(self.parse_multi(rdr)),
-            ),
+            SoeOpcode::Group =>                       SoePacketParsed::new(SoeOpcode::Group,self.parse_multi(rdr))
+            ,
             SoeOpcode::Ordered => SoePacketParsed::new(
                 SoeOpcode::Ordered,
-                SoePacket::DataPacket(self.parse_data(rdr, opcode as u16)),
+                SoePacket::DataPacket(DataPacket::from(rdr, opcode as u16, self.use_crc)),
             ),
             SoeOpcode::FatalError => SoePacketParsed::new(
                 SoeOpcode::FatalError,
                 SoePacket::FatalErrorPacket(FatalErrorPacket {}),
             ),
         }
-    }
+    } 
 
     fn parse_session_request(
         &mut self,
@@ -188,16 +185,6 @@ impl Soeprotocol {
             udp_length,
         }
     }
-
-    fn parse_disconnect(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> DisconnectPacket {
-        // if rdr.get_ref().len() < PacketsMinSize::Disconnect as usize {
-        //     return r#"{"name":"Disconnect" ,"session_id":null,"reason":"unknown"}"#.to_string();
-        // }
-        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let reason = disconnect_reason_to_string(rdr.read_u16::<BigEndian>().unwrap_or_default());
-        DisconnectPacket::new(session_id, reason)
-    }
-
     fn parse_net_status_request(
         &mut self,
         mut rdr: Cursor<&std::vec::Vec<u8>>,
@@ -252,42 +239,23 @@ impl Soeprotocol {
         }
     }
 
-    fn parse_multi(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> GroupedPackets {
-        // check size
-        // if !check_min_size(
-        //     &rdr,
-        //     PacketsMinSize::MultiPacket as usize,
-        //     self.is_using_crc(),
-        // ) {
-        //     return gen_size_error_json(rdr);
-        // }
+    fn parse_multi(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> SoePacket {
         let mut grouped_packet = GroupedPackets::new();
         let data_end: u64 = get_data_end(&rdr, self.is_using_crc());
         let was_crc_enabled = self.is_using_crc();
-        if was_crc_enabled {
-            self.disable_crc();
-            rdr.set_position(data_end);
-            let crc: u16 = rdr.read_u16::<BigEndian>().unwrap_or_default();
-            let vec = rdr.clone().into_inner();
-            let packet_without_crc = &vec[0..data_end as usize];
-            let crc_value =
-                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
-            // if crc_value != crc {
-            //     return gen_crc_error_json(vec, crc_value, crc);
-            // }
-            rdr.set_position(2); // reset pos after the opcode
-        }
+        self.disable_crc();
         loop {
             let sub_packet_data_length = read_data_length(&mut rdr);
             if sub_packet_data_length == 0
                 || sub_packet_data_length as u64 + rdr.position() > data_end
             {
-                // return gen_corruption_error_json(rdr, sub_packet_data_length, data_end);
+                return SoePacket::UnknownPacket(UnknownPacket{});
             }
             let sub_packet_data =
                 extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
             rdr.set_position(sub_packet_data_length as u64 + rdr.position());
             let sub_packet_parsed = self.parse(sub_packet_data);
+            // maybe break the loop as soon as a packet fail
             grouped_packet.add_packet(sub_packet_parsed.get_packet());
             if rdr.position() == data_end {
                 break;
@@ -296,62 +264,10 @@ impl Soeprotocol {
         if was_crc_enabled {
             self.enable_crc();
         }
-        grouped_packet
+        SoePacket::GroupedPackets(grouped_packet)
     }
 
-    fn parse_data(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> DataPacket {
-        // if !check_min_size(&rdr, PacketsMinSize::DataPacket as usize, self.use_crc) {
-        //     return gen_size_error_json(rdr);
-        // }
-        //
-        // TODO: il va falloir ajouter un moyen d'identifier les différents types de data
-        // let name = if opcode == 0x09 {
-        //     "Data"
-        // } else {
-        //     "DataFragment"
-        // };
-        let sequence = rdr.read_u16::<BigEndian>().unwrap_or_default();
 
-        let data_end: u64 = get_data_end(&rdr, self.use_crc);
-        let mut crc: u16 = 0;
-        if self.use_crc {
-            rdr.set_position(data_end);
-            crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        }
-        let vec = rdr.get_ref().to_vec();
-        let data = &vec[4..data_end as usize];
-        // check that crc value is correct
-        if self.use_crc {
-            let packet_without_crc = &vec[0..data_end as usize];
-            let crc_value =
-                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
-            // if crc_value != crc {
-            //     return gen_crc_error_json(&vec, crc_value, crc);
-            // }
-        }
-        DataPacket::new(data.to_vec(), sequence, opcode)
-    }
-
-    fn parse_ack(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> AckPacket {
-        // if !check_min_size(&rdr, PacketsMinSize::Ack as usize, self.use_crc) {
-        //     return gen_size_error_json(rdr);
-        // }
-        // TODO: pareil pour les acks ajoute juste l'opcode comme field
-        // let name = if opcode == 0x15 { "Ack" } else { "OutOfOrder" };
-        let sequence = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        if self.use_crc {
-            let crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
-            let data_end: u64 = get_data_end(&rdr, self.use_crc);
-            let vec = rdr.into_inner();
-            let packet_without_crc = &vec[0..data_end as usize];
-            let crc_value =
-                (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
-            // if crc_value != crc {
-            //     return gen_crc_error_json(vec, crc_value, crc);
-            // }
-        }
-        AckPacket { sequence, opcode }
-    }
 
     pub fn get_crc_seed(&self) -> u32 {
         self.crc_seed

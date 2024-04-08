@@ -1,4 +1,6 @@
-use byteorder::{BigEndian, WriteBytesExt};
+use std::io::Cursor;
+
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -26,4 +28,13 @@ impl AckPacket {
             .unwrap_or_default();
         wtr
     }
+}
+
+impl AckPacket {
+        pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> AckPacket {
+            let sequence = _rdr.read_u16::<BigEndian>().unwrap_or_default();
+
+        AckPacket { sequence, opcode }
+
+          }
 }

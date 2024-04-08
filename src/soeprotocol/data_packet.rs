@@ -1,8 +1,10 @@
 
-use byteorder::{BigEndian, WriteBytesExt};
+use std::io::Cursor;
+
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use super::soeprotocol_functions::write_packet_data;
+use super::soeprotocol_functions::{get_data_end, write_packet_data};
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,4 +39,13 @@ impl DataPacket {
     pub fn get_data(&mut self) -> &mut Vec<u8> {
         &mut self.data
     }
+        pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16,use_crc:bool) -> DataPacket {
+            let sequence = _rdr.read_u16::<BigEndian>().unwrap_or_default();
+
+            let data_end: u64 = get_data_end(&_rdr, use_crc);
+            let vec = _rdr.get_ref().to_vec();
+            let data = &vec[4..data_end as usize]; 
+            DataPacket::new(data.to_vec(), sequence, opcode)
+
+          }
 }

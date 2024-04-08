@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use super::soeprotocol_packets_structs::SoePacket;
+use super::{soeprotocol_functions::{extract_subpacket_data, get_data_end, read_data_length}, soeprotocol_packets_structs::SoePacket};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MultiPackablePacket {
@@ -37,4 +37,5 @@ impl GroupedPackets {
     pub fn get_packets(&self) -> &Vec<SoePacket> {
         &self.sub_packets
     }
+   
 }
