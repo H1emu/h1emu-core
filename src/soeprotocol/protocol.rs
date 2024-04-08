@@ -84,6 +84,18 @@ impl Soeprotocol {
         Soeprotocol { use_crc, crc_seed }
     }
 
+    fn check_crc(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> bool {
+        let data_end: u64 = get_data_end(&rdr, self.use_crc);
+        rdr.set_position(data_end);
+        let crc = rdr.read_u16::<BigEndian>().unwrap_or_default();
+        rdr.set_position(2);
+        let vec = rdr.get_ref().to_vec();
+        let packet_without_crc = &vec[0..data_end as usize];
+        let crc_value =
+            (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
+        crc == crc_value
+    }
+
     pub fn parse(&mut self, data: Vec<u8>) -> SoePacketParsed {
         let mut rdr = Cursor::new(&data);
         let opcode: SoeOpcode = if data.len() >= 2 {
@@ -91,6 +103,14 @@ impl Soeprotocol {
         } else {
             SoeOpcode::Unknown
         };
+
+        // FIXME: cloning = shit
+        if self.use_crc && !self.check_crc(rdr.clone()) {
+            return SoePacketParsed::new(
+                SoeOpcode::Unknown,
+                SoePacket::UnknownPacket(UnknownPacket {}),
+            );
+        }
 
         match opcode {
             SoeOpcode::Unknown => SoePacketParsed::new(
