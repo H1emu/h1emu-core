@@ -21,8 +21,6 @@ pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc
     }
 }
 
-
-
 pub fn get_data_end(rdr: &Cursor<&std::vec::Vec<u8>>, use_crc: bool) -> u64 {
     if use_crc {
         return (rdr.get_ref().len() as u64) - 2_u64;
@@ -77,8 +75,6 @@ pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
 #[cfg(test)]
 mod tests {
     use crate::soeprotocol::{data_packet::DataPacket, protocol::SoeOpcode};
-
-
 
     #[test]
     fn write_packet_data_test() {

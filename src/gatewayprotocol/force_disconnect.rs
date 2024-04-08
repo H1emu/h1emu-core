@@ -11,4 +11,3 @@ impl ForceDisconnectPacket {
         ForceDisconnectPacket {}
     }
 }
-

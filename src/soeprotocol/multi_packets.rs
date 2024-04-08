@@ -1,8 +1,10 @@
-
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use super::{soeprotocol_functions::{extract_subpacket_data, get_data_end, read_data_length}, soeprotocol_packets_structs::SoePacket};
+use super::{
+    soeprotocol_functions::{extract_subpacket_data, get_data_end, read_data_length},
+    soeprotocol_packets_structs::SoePacket,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MultiPackablePacket {
@@ -12,9 +14,6 @@ pub struct MultiPackablePacket {
     pub data: Option<Vec<u8>>,
     pub sequence: u16,
 }
-
-
-
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,5 +36,4 @@ impl GroupedPackets {
     pub fn get_packets(&self) -> &Vec<SoePacket> {
         &self.sub_packets
     }
-   
 }

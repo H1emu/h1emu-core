@@ -1,5 +1,3 @@
-
-
 use std::io::Cursor;
 
 use byteorder::{BigEndian, ReadBytesExt};
@@ -43,12 +41,12 @@ impl DisconnectPacket {
     pub fn get_reason(&self) -> String {
         self.reason.clone()
     }
-
 }
 
 impl DisconnectPacket {
     pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>) -> DisconnectPacket {
         let session_id = _rdr.read_u32::<BigEndian>().unwrap_or_default();
         let reason = disconnect_reason_to_string(_rdr.read_u16::<BigEndian>().unwrap_or_default());
-        DisconnectPacket::new(session_id, reason)    }
+        DisconnectPacket::new(session_id, reason)
+    }
 }

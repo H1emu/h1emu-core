@@ -1,8 +1,10 @@
-
 use crate::crc::crc32;
 use crate::lib_utils::str_from_u8_nul_utf8_checked;
 use crate::soeprotocol::data_packet::DataPacket;
-use crate::soeprotocol::{fatal_error_packet::FatalErrorPacket, ping_packet::PingPacket, soeprotocol_packets_structs::SoePacket, unknown_packet::UnknownPacket};
+use crate::soeprotocol::{
+    fatal_error_packet::FatalErrorPacket, ping_packet::PingPacket,
+    soeprotocol_packets_structs::SoePacket, unknown_packet::UnknownPacket,
+};
 
 use super::ack_packet::AckPacket;
 use super::disconnect_packet::DisconnectPacket;
@@ -10,8 +12,8 @@ use super::multi_packets::GroupedPackets;
 use super::net_status_reply_packet::NetStatusReplyPacket;
 use super::net_status_request_packet::NetStatusRequestPacket;
 use super::session_reply_packet::SessionReplyPacket;
-use super::{session_request_packet::SessionRequestPacket, soeprotocol_functions::*};
 use super::soeprotocol_packets_structs::SoePacketParsed;
+use super::{session_request_packet::SessionRequestPacket, soeprotocol_functions::*};
 use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
@@ -103,9 +105,9 @@ impl Soeprotocol {
                 SoeOpcode::SessionReply,
                 SoePacket::SessionReplyPacket(self.parse_session_reply(rdr)),
             ),
-            SoeOpcode::MultiPacket => 
-                      SoePacketParsed::new(SoeOpcode::MultiPacket,self.parse_multi(rdr))
-            ,
+            SoeOpcode::MultiPacket => {
+                SoePacketParsed::new(SoeOpcode::MultiPacket, self.parse_multi(rdr))
+            }
             SoeOpcode::Disconnect => SoePacketParsed::new(
                 SoeOpcode::Disconnect,
                 SoePacket::DisconnectPacket(DisconnectPacket::from(rdr)),
@@ -137,8 +139,7 @@ impl Soeprotocol {
                 SoeOpcode::Ack,
                 SoePacket::AckPacket(AckPacket::from(rdr, opcode as u16)),
             ),
-            SoeOpcode::Group =>                       SoePacketParsed::new(SoeOpcode::Group,self.parse_multi(rdr))
-            ,
+            SoeOpcode::Group => SoePacketParsed::new(SoeOpcode::Group, self.parse_multi(rdr)),
             SoeOpcode::Ordered => SoePacketParsed::new(
                 SoeOpcode::Ordered,
                 SoePacket::DataPacket(DataPacket::from(rdr, opcode as u16, self.use_crc)),
@@ -148,7 +149,7 @@ impl Soeprotocol {
                 SoePacket::FatalErrorPacket(FatalErrorPacket {}),
             ),
         }
-    } 
+    }
 
     fn parse_session_request(
         &mut self,
@@ -249,7 +250,7 @@ impl Soeprotocol {
             if sub_packet_data_length == 0
                 || sub_packet_data_length as u64 + rdr.position() > data_end
             {
-                return SoePacket::UnknownPacket(UnknownPacket{});
+                return SoePacket::UnknownPacket(UnknownPacket {});
             }
             let sub_packet_data =
                 extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
@@ -266,8 +267,6 @@ impl Soeprotocol {
         }
         SoePacket::GroupedPackets(grouped_packet)
     }
-
-
 
     pub fn get_crc_seed(&self) -> u32 {
         self.crc_seed

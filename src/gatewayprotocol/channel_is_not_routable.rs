@@ -11,4 +11,3 @@ impl ChannelIsNotRoutablePacket {
         ChannelIsNotRoutablePacket {}
     }
 }
-

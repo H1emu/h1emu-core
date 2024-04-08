@@ -1,10 +1,21 @@
-
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::soeprotocol::protocol::SoeOpcode;
 
-use super::{ack_packet::AckPacket, data_packet::DataPacket, disconnect_packet::DisconnectPacket, fatal_error_packet::FatalErrorPacket, multi_packets::{GroupedPackets, MultiPackablePacket}, net_status_reply_packet::NetStatusReplyPacket, net_status_request_packet::NetStatusRequestPacket, ping_packet::PingPacket, session_reply_packet::SessionReplyPacket, session_request_packet::SessionRequestPacket, unknown_packet::UnknownPacket};
+use super::{
+    ack_packet::AckPacket,
+    data_packet::DataPacket,
+    disconnect_packet::DisconnectPacket,
+    fatal_error_packet::FatalErrorPacket,
+    multi_packets::{GroupedPackets, MultiPackablePacket},
+    net_status_reply_packet::NetStatusReplyPacket,
+    net_status_request_packet::NetStatusRequestPacket,
+    ping_packet::PingPacket,
+    session_reply_packet::SessionReplyPacket,
+    session_request_packet::SessionRequestPacket,
+    unknown_packet::UnknownPacket,
+};
 
 // #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -90,8 +101,3 @@ impl SoePacketParsed {
         self.packet.clone()
     }
 }
-
-
-
-
-
