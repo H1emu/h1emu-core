@@ -25,7 +25,11 @@ impl DataPacket {
     pub fn get_sequence(&self) -> u16 {
         self.sequence
     }
-    #[wasm_bindgen]
+
+    pub fn get_data(&mut self) -> Vec<u8> {
+        self.data.clone()
+    }
+
     pub fn build(&mut self) -> Vec<u8> {
         let mut wtr: Vec<u8> = vec![];
         wtr.write_u16::<BigEndian>(self.opcode).unwrap_or_default();
@@ -34,7 +38,7 @@ impl DataPacket {
     }
 }
 impl DataPacket {
-    pub fn get_data(&mut self) -> &mut Vec<u8> {
+    pub fn get_data_mut(&mut self) -> &mut Vec<u8> {
         &mut self.data
     }
     pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16, use_crc: bool) -> DataPacket {

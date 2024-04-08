@@ -3,24 +3,6 @@ use std::io::Cursor;
 
 use super::data_packet::DataPacket;
 
-pub enum PacketsMinSize {
-    SessionRequest = 14,
-    SessionReply = 21,
-    Disconnect = 6,
-    NetStatusPacket = 42,
-    MultiPacket = 7,
-    DataPacket = 5,
-    Ack = 4,
-}
-
-pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc: bool) -> bool {
-    if use_crc {
-        return rdr.get_ref().len() >= min_size + 2;
-    } else {
-        return rdr.get_ref().len() >= min_size;
-    }
-}
-
 pub fn get_data_end(rdr: &Cursor<&std::vec::Vec<u8>>, use_crc: bool) -> u64 {
     if use_crc {
         return (rdr.get_ref().len() as u64) - 2_u64;
@@ -69,7 +51,7 @@ pub fn extract_subpacket_data(
 pub fn write_packet_data(wtr: &mut Vec<u8>, data_packet: &mut DataPacket) {
     wtr.write_u16::<BigEndian>(data_packet.sequence)
         .unwrap_or_default();
-    wtr.append(data_packet.get_data());
+    wtr.append(data_packet.get_data_mut());
 }
 
 #[cfg(test)]

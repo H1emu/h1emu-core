@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use super::{
     soeprotocol_functions::{extract_subpacket_data, get_data_end, read_data_length},
-    soeprotocol_packets_structs::SoePacket,
+    soeprotocol_packets_structs::{SoePacket, SoePacketParsed},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,12 +28,16 @@ impl GroupedPackets {
             sub_packets: Vec::new(),
         }
     }
+    pub fn get_packets(&self) -> Vec<SoePacketParsed> {
+        let mut vec: Vec<SoePacketParsed> = vec![];
+        for soe_packet in self.sub_packets.clone() {
+            vec.push(SoePacketParsed::new(soe_packet, soe_packet));
+        }
+        vec
+    }
 }
 impl GroupedPackets {
     pub fn add_packet(&mut self, packet: SoePacket) {
         self.sub_packets.push(packet);
-    }
-    pub fn get_packets(&self) -> &Vec<SoePacket> {
-        &self.sub_packets
     }
 }

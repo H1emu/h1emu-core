@@ -95,6 +95,25 @@ impl Soeprotocol {
             (crc32(&&mut packet_without_crc.to_vec(), self.crc_seed as usize) & 0xffff) as u16;
         crc == crc_value
     }
+    fn check_min_size(&mut self, opcode: SoeOpcode, size: usize) -> bool {
+        let min_size: usize = match opcode {
+            SoeOpcode::SessionRequest => 14,
+            SoeOpcode::SessionReply => 21,
+            SoeOpcode::Disconnect => 6,
+            SoeOpcode::NetStatusRequest => 42,
+            SoeOpcode::MultiPacket => 7,
+            SoeOpcode::Data => 5,
+            SoeOpcode::DataFragment => 5,
+            SoeOpcode::Ack => 4,
+            _ => 0,
+        };
+
+        if self.use_crc {
+            size >= min_size + 2
+        } else {
+            size >= min_size
+        }
+    }
 
     pub fn parse(&mut self, data: Vec<u8>) -> SoePacketParsed {
         let mut rdr = Cursor::new(&data);
@@ -103,6 +122,13 @@ impl Soeprotocol {
         } else {
             SoeOpcode::Unknown
         };
+
+        if !self.check_min_size(opcode, data.len()) {
+            return SoePacketParsed::new(
+                SoeOpcode::Unknown,
+                SoePacket::UnknownPacket(UnknownPacket {}),
+            );
+        }
 
         // FIXME: cloning = shit
         if self.use_crc && !self.check_crc(rdr.clone()) {
