@@ -99,11 +99,11 @@ impl Soeprotocol {
             ),
             SoeOpcode::SessionRequest => SoePacketParsed::new(
                 SoeOpcode::SessionRequest,
-                SoePacket::SessionRequestPacket(self.parse_session_request(rdr)),
+                SoePacket::SessionRequestPacket(SessionRequestPacket::from(rdr)),
             ),
             SoeOpcode::SessionReply => SoePacketParsed::new(
                 SoeOpcode::SessionReply,
-                SoePacket::SessionReplyPacket(self.parse_session_reply(rdr)),
+                SoePacket::SessionReplyPacket(SessionReplyPacket::from(rdr)),
             ),
             SoeOpcode::MultiPacket => {
                 SoePacketParsed::new(SoeOpcode::MultiPacket, self.parse_multi(rdr))
@@ -117,11 +117,11 @@ impl Soeprotocol {
             }
             SoeOpcode::NetStatusRequest => SoePacketParsed::new(
                 SoeOpcode::NetStatusRequest,
-                SoePacket::NetStatusRequestPacket(self.parse_net_status_request(rdr)),
+                SoePacket::NetStatusRequestPacket(NetStatusRequestPacket::from(rdr)),
             ),
             SoeOpcode::NetStatusReply => SoePacketParsed::new(
                 SoeOpcode::NetStatusReply,
-                SoePacket::NetStatusReplyPacket(self.parse_net_status_reply(rdr)),
+                SoePacket::NetStatusReplyPacket(NetStatusReplyPacket::from(rdr)),
             ),
             SoeOpcode::Data => SoePacketParsed::new(
                 SoeOpcode::Data,
@@ -148,95 +148,6 @@ impl Soeprotocol {
                 SoeOpcode::FatalError,
                 SoePacket::FatalErrorPacket(FatalErrorPacket {}),
             ),
-        }
-    }
-
-    fn parse_session_request(
-        &mut self,
-        mut rdr: Cursor<&std::vec::Vec<u8>>,
-    ) -> SessionRequestPacket {
-        // if !check_min_size(&rdr, PacketsMinSize::SessionRequest as usize, false) {
-        //     return gen_size_error_json(rdr);
-        // }
-
-        let crc_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let udp_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let protocol_data_position = rdr.position() as usize;
-        let raw_data = rdr.into_inner();
-        let protocol =
-            str_from_u8_nul_utf8_checked(&raw_data[protocol_data_position..]).to_string();
-        SessionRequestPacket::new(crc_length, session_id, udp_length, protocol)
-    }
-
-    fn parse_session_reply(&mut self, mut rdr: Cursor<&std::vec::Vec<u8>>) -> SessionReplyPacket {
-        // if rdr.get_ref().len() != PacketsMinSize::SessionReply as usize {
-        //     return gen_size_error_json(rdr);
-        // }
-        let session_id = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let crc_seed = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let crc_length = rdr.read_u8().unwrap_or_default();
-        let encrypt_method = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        let udp_length = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        SessionReplyPacket {
-            session_id,
-            crc_seed,
-            crc_length,
-            encrypt_method,
-            udp_length,
-        }
-    }
-    fn parse_net_status_request(
-        &mut self,
-        mut rdr: Cursor<&std::vec::Vec<u8>>,
-    ) -> NetStatusRequestPacket {
-        // if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
-        //     return gen_size_error_json(rdr);
-        // }
-        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        let last_client_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let average_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let shortest_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let longest_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let last_server_update = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let packets_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let packets_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let unknown_field = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        NetStatusRequestPacket {
-            client_tick_count,
-            last_client_update,
-            average_update,
-            shortest_update,
-            longest_update,
-            last_server_update,
-            packets_sent,
-            packets_received,
-            unknown_field,
-        }
-    }
-
-    fn parse_net_status_reply(
-        &mut self,
-        mut rdr: Cursor<&std::vec::Vec<u8>>,
-    ) -> NetStatusReplyPacket {
-        // if rdr.get_ref().len() != PacketsMinSize::NetStatusPacket as usize {
-        //     return gen_size_error_json(rdr);
-        // }
-        let client_tick_count = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        let server_tick_count = rdr.read_u32::<BigEndian>().unwrap_or_default();
-        let client_packet_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let client_packet_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let server_packet_sent = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let server_packet_received = rdr.read_u64::<BigEndian>().unwrap_or_default();
-        let unknown_field = rdr.read_u16::<BigEndian>().unwrap_or_default();
-        NetStatusReplyPacket {
-            client_tick_count,
-            server_tick_count,
-            client_packet_sent,
-            client_packet_received,
-            server_packet_sent,
-            server_packet_received,
-            unknown_field,
         }
     }
 

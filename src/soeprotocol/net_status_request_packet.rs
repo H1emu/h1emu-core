@@ -1,3 +1,6 @@
+use std::io::Cursor;
+
+use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
@@ -65,5 +68,29 @@ impl NetStatusRequestPacket {
     }
     pub fn get_unknown_field(&self) -> u16 {
         self.unknown_field
+    }
+}
+impl NetStatusRequestPacket {
+    pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>) -> NetStatusRequestPacket {
+        let client_tick_count = _rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let last_client_update = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let average_update = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let shortest_update = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let longest_update = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let last_server_update = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let packets_sent = _rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let packets_received = _rdr.read_u64::<BigEndian>().unwrap_or_default();
+        let unknown_field = _rdr.read_u16::<BigEndian>().unwrap_or_default();
+        NetStatusRequestPacket {
+            client_tick_count,
+            last_client_update,
+            average_update,
+            shortest_update,
+            longest_update,
+            last_server_update,
+            packets_sent,
+            packets_received,
+            unknown_field,
+        }
     }
 }

@@ -1,3 +1,6 @@
+use std::io::Cursor;
+
+use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
@@ -42,5 +45,22 @@ impl SessionReplyPacket {
     }
     pub fn get_udp_length(&self) -> u32 {
         self.udp_length
+    }
+}
+
+impl SessionReplyPacket {
+    pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>) -> SessionReplyPacket {
+        let session_id = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let crc_seed = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let crc_length = _rdr.read_u8().unwrap_or_default();
+        let encrypt_method = _rdr.read_u16::<BigEndian>().unwrap_or_default();
+        let udp_length = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        SessionReplyPacket {
+            session_id,
+            crc_seed,
+            crc_length,
+            encrypt_method,
+            udp_length,
+        }
     }
 }
