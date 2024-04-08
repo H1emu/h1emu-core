@@ -1,17 +1,17 @@
-use super::protocol_errors::{
-    gen_corruption_error_json, gen_crc_error_json, gen_deserializing_error_json,
-    gen_size_error_json,
-};
 
-use super::soeprotocol_functions::*;
-use super::soeprotocol_packets_structs::SessionReplyPacket;
+use crate::crc::crc32;
+use crate::lib_utils::str_from_u8_nul_utf8_checked;
+use crate::soeprotocol::data_packet::DataPacket;
+use crate::soeprotocol::{fatal_error_packet::FatalErrorPacket, ping_packet::PingPacket, soeprotocol_packets_structs::SoePacket, unknown_packet::UnknownPacket};
+
+use super::ack_packet::AckPacket;
+use super::disconnect_packet::DisconnectPacket;
+use super::multi_packets::GroupedPackets;
+use super::net_status_reply_packet::NetStatusReplyPacket;
+use super::net_status_request_packet::NetStatusRequestPacket;
+use super::session_reply_packet::SessionReplyPacket;
+use super::{session_request_packet::SessionRequestPacket, soeprotocol_functions::*};
 use super::soeprotocol_packets_structs::SoePacketParsed;
-use super::soeprotocol_packets_structs::{DataPacket, NetStatusReplyPacket};
-use super::{
-    crc::crc32,
-    lib_utils::{str_from_u8_nul_utf8_checked, u8_from_str_nul_utf8_unchecked},
-    soeprotocol_packets_structs::*,
-};
 use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;

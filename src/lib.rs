@@ -13,9 +13,5 @@ pub mod protocol_errors;
 pub mod rc4;
 #[cfg(feature = "soeprotocol")]
 pub mod soeprotocol;
-#[cfg(feature = "soeprotocol")]
-pub mod soeprotocol_functions;
-#[cfg(feature = "soeprotocol")]
-pub mod soeprotocol_packets_structs;
 #[cfg(feature = "game-utils")]
 pub mod utils;
