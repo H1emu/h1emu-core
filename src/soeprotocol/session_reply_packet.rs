@@ -1,8 +1,10 @@
 use std::io::Cursor;
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+
+use crate::soeprotocol::protocol::SoeOpcode;
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SessionReplyPacket {
@@ -45,6 +47,22 @@ impl SessionReplyPacket {
     }
     pub fn get_udp_length(&self) -> u32 {
         self.udp_length
+    }
+    pub fn build(&mut self) -> Vec<u8> {
+        let mut wtr: Vec<u8> = vec![];
+        wtr.write_u16::<BigEndian>(SoeOpcode::SessionReply as u16)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.session_id)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.crc_seed)
+            .unwrap_or_default();
+        wtr.write_u8(self.crc_length).unwrap_or_default();
+        wtr.write_u16::<BigEndian>(self.encrypt_method)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.udp_length)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(3).unwrap_or_default();
+        wtr
     }
 }
 

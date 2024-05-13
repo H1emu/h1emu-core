@@ -123,21 +123,22 @@ impl Soeprotocol {
             SoeOpcode::Unknown
         };
 
-        if !self.check_min_size(opcode, data.len()) {
-            return SoePacketParsed::new(
-                SoeOpcode::Unknown,
-                SoePacket::UnknownPacket(UnknownPacket {}),
-            );
-        }
-
-        // FIXME: cloning = shit
-        if self.use_crc && !self.check_crc(rdr.clone()) {
-            return SoePacketParsed::new(
-                SoeOpcode::Unknown,
-                SoePacket::UnknownPacket(UnknownPacket {}),
-            );
-        }
-
+        // FIXME: something wrong with validations
+        // if !self.check_min_size(opcode, data.len()) {
+        //     return SoePacketParsed::new(
+        //         SoeOpcode::Unknown,
+        //         SoePacket::UnknownPacket(UnknownPacket {}),
+        //     );
+        // }
+        //
+        // // FIXME: cloning = shit
+        // if self.use_crc && !self.check_crc(rdr.clone()) {
+        //     return SoePacketParsed::new(
+        //         SoeOpcode::Unknown,
+        //         SoePacket::UnknownPacket(UnknownPacket {}),
+        //     );
+        // }
+        //
         match opcode {
             SoeOpcode::Unknown => SoePacketParsed::new(
                 SoeOpcode::Unknown,

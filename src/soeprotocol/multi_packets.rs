@@ -1,10 +1,8 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use super::{
-    soeprotocol_functions::{extract_subpacket_data, get_data_end, read_data_length},
-    soeprotocol_packets_structs::{SoePacket, SoePacketParsed},
-};
+use super::soeprotocol_packets_structs::{SoePacket, SoePacketParsed};
+use crate::soeprotocol::protocol::SoeOpcode::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MultiPackablePacket {
@@ -31,7 +29,17 @@ impl GroupedPackets {
     pub fn get_packets(&self) -> Vec<SoePacketParsed> {
         let mut vec: Vec<SoePacketParsed> = vec![];
         for soe_packet in self.sub_packets.clone() {
-            vec.push(SoePacketParsed::new(soe_packet, soe_packet));
+            let opcode = match &soe_packet {
+                session_request_packet => SessionReply,
+                session_reply_packet => SessionReply,
+                data_packet => Data,
+                ack_packet => Ack,
+                disconnect_packet => Disconnect,
+                ping_packet => Ping,
+                unknown_packet => Unknown,
+                _ => Unknown,
+            };
+            vec.push(SoePacketParsed::new(opcode, soe_packet));
         }
         vec
     }
