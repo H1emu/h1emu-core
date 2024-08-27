@@ -8,12 +8,15 @@ use crate::soeprotocol::protocol::SoeOpcode;
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SessionReplyPacket {
+    pub opcode: u16,
     pub session_id: u32,
     pub crc_seed: u32,
     pub crc_length: u8,
     // TODO: use the EncryptionMethod enum
     pub encrypt_method: u16,
     pub udp_length: u32,
+    pub bufferable: bool,
+    pub length: u16,
 }
 #[wasm_bindgen]
 impl SessionReplyPacket {
@@ -25,12 +28,16 @@ impl SessionReplyPacket {
         encrypt_method: u16,
         udp_length: u32,
     ) -> Self {
+        let length = 15 as u16;
         Self {
+            opcode: SoeOpcode::SessionReply as u16,
             session_id,
             crc_seed,
             crc_length,
             encrypt_method,
             udp_length,
+            bufferable: false,
+            length,
         }
     }
     pub fn get_session_id(&self) -> u32 {
@@ -73,12 +80,6 @@ impl SessionReplyPacket {
         let crc_length = _rdr.read_u8().unwrap_or_default();
         let encrypt_method = _rdr.read_u16::<BigEndian>().unwrap_or_default();
         let udp_length = _rdr.read_u32::<BigEndian>().unwrap_or_default();
-        SessionReplyPacket {
-            session_id,
-            crc_seed,
-            crc_length,
-            encrypt_method,
-            udp_length,
-        }
+        SessionReplyPacket::new(session_id, crc_seed, crc_length, encrypt_method, udp_length)
     }
 }

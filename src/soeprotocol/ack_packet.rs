@@ -9,12 +9,19 @@ use wasm_bindgen::prelude::*;
 pub struct AckPacket {
     pub opcode: u16,
     pub sequence: u16,
+    pub bufferable: bool,
+    pub length: u16,
 }
 #[wasm_bindgen]
 impl AckPacket {
     #[wasm_bindgen(constructor)]
     pub fn new(opcode: u16, sequence: u16) -> Self {
-        Self { opcode, sequence }
+        Self {
+            opcode,
+            sequence,
+            bufferable: true,
+            length: 4,
+        }
     }
     pub fn get_sequence(&self) -> u16 {
         self.sequence
@@ -34,6 +41,6 @@ impl AckPacket {
     pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>, opcode: u16) -> AckPacket {
         let sequence = _rdr.read_u16::<BigEndian>().unwrap_or_default();
 
-        AckPacket { sequence, opcode }
+        AckPacket::new(sequence, opcode)
     }
 }

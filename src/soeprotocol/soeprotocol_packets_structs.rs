@@ -50,9 +50,10 @@ impl SoePacketParsed {
             _ => None,
         }
     }
-    pub fn get_session_reply_packet(&self) -> Option<SessionReplyPacket> {
-        match &self.packet {
-            SoePacket::SessionReplyPacket(packet) => Some(packet.clone()),
+    // TODO: remove all clones like that
+    pub fn get_session_reply_packet(self) -> Option<SessionReplyPacket> {
+        match self.packet {
+            SoePacket::SessionReplyPacket(packet) => Some(packet),
             _ => None,
         }
     }

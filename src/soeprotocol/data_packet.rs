@@ -11,15 +11,20 @@ pub struct DataPacket {
     data: Vec<u8>,
     pub opcode: u16,
     pub sequence: u16,
+    pub bufferable: bool,
+    pub length: u16,
 }
 #[wasm_bindgen]
 impl DataPacket {
     #[wasm_bindgen(constructor)]
     pub fn new(data: Vec<u8>, sequence: u16, opcode: u16) -> Self {
+        let length = 4 + data.len() as u16;
         Self {
             data,
             sequence,
             opcode,
+            bufferable: true,
+            length,
         }
     }
     pub fn get_sequence(&self) -> u16 {
