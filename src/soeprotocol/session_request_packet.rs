@@ -39,11 +39,10 @@ impl SessionRequestPacket {
     }
 }
 
-
 impl SessionRequestPacket {
     pub fn from(mut _rdr: Cursor<&std::vec::Vec<u8>>) -> SessionRequestPacket {
-        let crc_length = _rdr.read_u32::<BigEndian>().unwrap_or_default();
         let session_id = _rdr.read_u32::<BigEndian>().unwrap_or_default();
+        let crc_length = _rdr.read_u32::<BigEndian>().unwrap_or_default();
         let udp_length = _rdr.read_u32::<BigEndian>().unwrap_or_default();
         let protocol_data_position = _rdr.position() as usize;
         let raw_data = _rdr.into_inner();
