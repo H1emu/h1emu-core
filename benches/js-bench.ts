@@ -4,9 +4,10 @@ function bench(name: string, func: any) {
   for (let i = 0; i < 100; i++) {
     func();
   }
-  console.time(name);
+  const start = performance.now();
   func();
-  console.timeEnd(name);
+  const end = performance.now();
+  console.log(`${name} : ${end - start}ms`);
 }
 
 console.time("Init Protocol");
@@ -142,9 +143,9 @@ bench("Pack Session Request", () => {
 });
 
 bench("Pack Session Request DIRECT ACCESS", () => {
-  soeProtocol.pack_session_request_packet(1008176227,3,512,"LoginUdp_9");
+  soeProtocol.pack_session_request_packet(1008176227, 3, 512, "LoginUdp_9");
 });
-const mdddrrr = JSON.parse(sessionRequestToPack)
+const mdddrrr = JSON.parse(sessionRequestToPack);
 bench("Pack Session Request JS", () => {
   soeProtocol.pack_session_request_fromjs(mdddrrr);
 });
@@ -154,7 +155,7 @@ bench("Pack Session Reply", () => {
 });
 
 bench("Pack Session Reply DIRECT ACCESS", () => {
-  soeProtocol.pack_session_reply_packet(1008176227,0,2,256,512);
+  soeProtocol.pack_session_reply_packet(1008176227, 0, 2, 256, 512);
 });
 
 bench("Pack Ping", () => {
@@ -186,7 +187,12 @@ bench("Pack Data packet", () => {
 });
 
 bench("Pack Data DIRECT ACCESS", () => {
-  soeProtocol.pack_data_packet(new Uint8Array([2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]),0);
+  soeProtocol.pack_data_packet(
+    new Uint8Array([
+      2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
+    ]),
+    0,
+  );
 });
 
 bench("Pack Data Fragment packet", () => {
@@ -194,7 +200,12 @@ bench("Pack Data Fragment packet", () => {
 });
 
 bench("Pack Data Fragment packet DIRECT ACCESS", () => {
-  soeProtocol.pack_fragment_data_packet(new Uint8Array([2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]),0);
+  soeProtocol.pack_fragment_data_packet(
+    new Uint8Array([
+      2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0,
+    ]),
+    0,
+  );
 });
 
 console.log("\n Pack tests with stringify \n");
@@ -210,7 +221,7 @@ const dataFragmentPacketToPackStringify = JSON.parse(dataFragmentPacketToPack);
 
 bench("Pack Session Request", () => {
   soeProtocol.pack_session_request(
-    JSON.stringify(sessionRequestToPackStringify)
+    JSON.stringify(sessionRequestToPackStringify),
   );
 });
 
@@ -222,7 +233,7 @@ bench("Pack Ping", () => {
 });
 bench("Pack Out of order packet", () => {
   soeProtocol.pack_out_of_order(
-    JSON.stringify(outOfOrderPacketToPackStringify)
+    JSON.stringify(outOfOrderPacketToPackStringify),
   );
 });
 bench("Pack Ack packet", () => {
