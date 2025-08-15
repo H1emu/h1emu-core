@@ -88,7 +88,7 @@ impl Soeprotocol {
             .write_u16::<BigEndian>(SoeOpcode::SessionRequest as u16)
             .unwrap_or_default();
         self.wtr
-            .write_u32::<BigEndian>(packet.crc_length)
+            .write_u32::<BigEndian>(packet.protocol_version)
             .unwrap_or_default();
         self.wtr
             .write_u32::<BigEndian>(packet.session_id)
@@ -588,7 +588,7 @@ impl Soeprotocol {
         let raw_data = rdr.into_inner();
         let protocol = str_from_u8_nul_utf8_checked(&raw_data[protocol_data_position..]);
         format!(
-            r#"{{"name":"SessionRequest","crc_length":{},"session_id":{},"udp_length":{},"protocol":"{}"}}"#,
+            r#"{{"name":"SessionRequest","protocol_version":{},"session_id":{},"udp_length":{},"protocol":"{}"}}"#,
             crc_length, session_id, udp_length, protocol
         )
     }
@@ -809,7 +809,7 @@ mod tests {
         let data_parsed: serde_json::Value =
             serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
                 .unwrap_or_default();
-        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionRequest","crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#).unwrap_or_default();
+        let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionRequest","protocol_version":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
     }
 
@@ -828,7 +828,7 @@ mod tests {
     fn session_request_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_pack =
-            r#"{"crc_length":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
+            r#"{"protocol_version":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
                 .to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
         assert_eq!(
@@ -844,7 +844,7 @@ mod tests {
     fn session_request_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
-            r#"{"crc_length":3,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
+            r#"{"protocol_version":3,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
         let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
         let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
         assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
