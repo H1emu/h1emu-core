@@ -11,7 +11,14 @@ readme = "README.md"
 [features]
 default = ["full"]
 game-utils = ["rand", "getrandom"]
-soeprotocol = ["crc", "serde", "serde_json", "byteorder", "protocols"]
+soeprotocol = [
+  "crc",
+  "serde",
+  "serde_json",
+  "byteorder",
+  "protocols",
+  "wasm-bindgen",
+]
 gatewayprotocol = ["serde", "serde_json", "byteorder", "protocols"]
 protocols = ["serde", "serde_json", "byteorder"]
 crc = ["byteorder"]
@@ -29,7 +36,7 @@ full = [
 
 
 [dependencies]
-wasm-bindgen = { version = "0.2.100" }
+wasm-bindgen = { version = "0.2.100", optional = true }
 getrandom = { version = "0.2.11", features = ["js"], optional = true }
 rand = { version = "0.8.5", optional = true }
 byteorder = { version = "1.5.0", optional = true }
@@ -37,6 +44,8 @@ serde_json = { version = "1.0.140", optional = true }
 serde = { version = "1.0.218", features = ["derive"], optional = true }
 gloo-utils = "0.2.0"
 
+[target.wasm32-unknown-unknown.dependencies]
+wasm-bindgen = { version = "0.2.100" }
 
 [dev-dependencies]
 criterion = { version = "0.5.1" }
