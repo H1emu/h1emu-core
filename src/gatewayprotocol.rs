@@ -3,7 +3,7 @@ use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
 use super::gatewayprotocol_packets_structs::*;
-use super::lib_utils::read_prefixed_string_le;
+use super::lib_utils::{json_str_to_jsvalue, read_prefixed_string_le};
 
 #[wasm_bindgen]
 pub enum GatewayChannels {
@@ -25,7 +25,11 @@ impl GatewayProtocol {
     pub fn initialize() -> GatewayProtocol {
         GatewayProtocol { wtr: vec![] }
     }
-    pub fn parse(&mut self, data: Vec<u8>) -> String {
+    pub fn parse(&mut self, data: Vec<u8>) -> JsValue {
+        json_str_to_jsvalue(&self.parse_to_json_str(data))
+    }
+
+    fn parse_to_json_str(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
         if data.len() < 2 {
             return format!(r#"{{"name":"Unknown","raw":{:?}}}"#, data);
@@ -193,7 +197,7 @@ mod tests {
             56, 48, 14, 0, 0, 0, 48, 46, 49, 57, 53, 46, 52, 46, 49, 52, 55, 53, 56, 54,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&gatewayprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"LoginRequest","character_id":"0x7c963899f5fdddf4","ticket":"itsme","client_protocol":"ClientProtocol_1080","client_build":"0.195.4.147586"}"#;
         let succesful_data: serde_json::Value =
@@ -205,7 +209,7 @@ mod tests {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data_to_parse: [u8; 2] = [2, 1];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&gatewayprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"LoginReply","logged_in":true}"#;
         let succesful_data: serde_json::Value =
@@ -220,7 +224,7 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&gatewayprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&gatewayprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesfull_data_string = r#"{"name":"TunnelPacket","channel":0,"tunnel_data":[254, 3, 237, 98, 176, 99, 0, 109, 235, 2, 98, 113, 5, 229, 11, 115, 16, 119, 61, 0,
             0, 0, 0, 0, 0, 0, 0, 48, 33, 0, 0]}"#;
@@ -274,14 +278,14 @@ mod tests {
             46, 129, 174, 4, 102, 176, 167, 115, 131, 253, 188, 124, 226, 94, 250, 196, 53, 54, 99,
         ]
         .to_vec();
-        let parsed_data = gatewayprotocol_class.parse(data);
+        let parsed_data = gatewayprotocol_class.parse_to_json_str(data);
         assert!(!parsed_data.is_empty())
     }
     #[test]
     fn parsing_fail_0_25_0_test() {
         let mut gatewayprotocol_class = super::GatewayProtocol::initialize();
         let data: Vec<u8> = [161, 171, 140, 10, 70, 163, 116, 53].to_vec();
-        let parsed_data = gatewayprotocol_class.parse(data);
+        let parsed_data = gatewayprotocol_class.parse_to_json_str(data);
         assert!(!parsed_data.is_empty())
     }
     #[test]
@@ -295,7 +299,7 @@ mod tests {
                 let r: [u8; 4] = random();
                 data.append(&mut r.to_vec());
                 println!("parse {:?}", data);
-                let result = gatewayprotocol_class.parse(data);
+                let result = gatewayprotocol_class.parse_to_json_str(data);
                 println!("result {:?}", result);
             }
             for _y in 0..rnd_packets {
@@ -303,7 +307,7 @@ mod tests {
                 let r: [u8; 8] = random();
                 data.append(&mut r.to_vec());
                 println!("parse {:?}", data);
-                let result = gatewayprotocol_class.parse(data);
+                let result = gatewayprotocol_class.parse_to_json_str(data);
                 println!("result {:?}", result);
             }
         }

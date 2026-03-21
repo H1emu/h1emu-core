@@ -305,11 +305,12 @@ impl SubBasePackets {
             sub_packets: Vec::new(),
         }
     }
-}
-impl SubBasePackets {
+
     pub fn add_sub_packet(&mut self, sub_packet: Vec<u8>) {
         self.sub_packets.push(sub_packet);
     }
+}
+impl SubBasePackets {
     pub fn get_sub_packets(&self) -> &Vec<Vec<u8>> {
         &self.sub_packets
     }

@@ -27,3 +27,13 @@ pub fn read_prefixed_string_le(buffer: &[u8], offset: usize, length: u32) -> Str
 pub fn sat(x: f32) -> f32 {
     x.clamp(0.0, 1.0)
 }
+
+#[cfg(target_arch = "wasm32")]
+pub fn json_str_to_jsvalue(s: &str) -> wasm_bindgen::JsValue {
+    js_sys::JSON::parse(s).unwrap_or(wasm_bindgen::JsValue::NULL)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn json_str_to_jsvalue(_s: &str) -> wasm_bindgen::JsValue {
+    wasm_bindgen::JsValue::NULL
+}

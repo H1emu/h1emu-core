@@ -1,12 +1,14 @@
 use super::protocol_errors::{
-    gen_corruption_error_json, gen_crc_error_json, gen_deserializing_error_json,
-    gen_size_error_json,
+    gen_corruption_error_json, gen_crc_error_json, gen_size_error_json, SoePackError,
 };
 
 use super::soeprotocol_functions::*;
-use super::{crc::crc32, lib_utils::str_from_u8_nul_utf8_checked, soeprotocol_packets_structs::*};
+use super::{
+    crc::crc32,
+    lib_utils::{json_str_to_jsvalue, str_from_u8_nul_utf8_checked},
+    soeprotocol_packets_structs::*,
+};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use gloo_utils::format::JsValueSerdeExt;
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -74,22 +76,14 @@ impl Soeprotocol {
         self.wtr.clone()
     }
 
-    fn pack_from_json<P>(&mut self, opcode: u16, json: String) -> Vec<u8>
+    fn pack_from_json<P>(&mut self, opcode: u16, json: String) -> Result<Vec<u8>, SoePackError>
     where
         P: PacketWrite + serde::de::DeserializeOwned,
     {
         match serde_json::from_str::<P>(&json) {
-            Ok(p) => self.pack_packet(opcode, p),
-            Err(e) => gen_deserializing_error_json(e),
+            Ok(p) => Ok(self.pack_packet(opcode, p)),
+            Err(e) => Err(SoePackError::new(e.to_string())),
         }
-    }
-
-    fn pack_from_js<P>(&mut self, opcode: u16, js_object: &JsValue) -> Vec<u8>
-    where
-        P: PacketWrite + serde::de::DeserializeOwned,
-    {
-        let packet: P = js_object.into_serde().unwrap();
-        self.pack_packet(opcode, packet)
     }
 
     fn check_crc(&self, data: &[u8], data_end: usize, crc: u16) -> Option<String> {
@@ -158,14 +152,18 @@ impl Soeprotocol {
         }
     }
 
-    pub fn pack(&mut self, packet_opcode: SoeOpcode, packet: String) -> Vec<u8> {
+    pub fn pack(
+        &mut self,
+        packet_opcode: SoeOpcode,
+        packet: String,
+    ) -> Result<Vec<u8>, SoePackError> {
         match packet_opcode {
             SoeOpcode::SessionRequest => self.pack_session_request(packet),
             SoeOpcode::SessionReply => self.pack_session_reply(packet),
             SoeOpcode::MultiPacket => self.pack_multi(packet),
             SoeOpcode::Group => self.pack_group(packet),
-            SoeOpcode::Disconnect => vec![0, 5],
-            SoeOpcode::Ping => vec![0, 6],
+            SoeOpcode::Disconnect => Ok(vec![0, 5]),
+            SoeOpcode::Ping => Ok(vec![0, 6]),
             SoeOpcode::NetStatusRequest => self.pack_net_status_request(packet),
             SoeOpcode::NetStatusReply => self.pack_net_status_reply(packet),
             SoeOpcode::Data => self.pack_data(packet),
@@ -173,12 +171,12 @@ impl Soeprotocol {
             SoeOpcode::OutOfOrder => self.pack_out_of_order(packet),
             SoeOpcode::Ack => self.pack_ack(packet),
             SoeOpcode::Ordered => self.pack_ordered(packet),
-            SoeOpcode::FatalError => vec![],
-            SoeOpcode::Unknown => vec![],
+            SoeOpcode::FatalError => Ok(vec![]),
+            SoeOpcode::Unknown => Ok(vec![]),
         }
     }
 
-    pub fn pack_ordered(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_ordered(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<DataPacket>(SoeOpcode::Ordered as u16, packet)
     }
 
@@ -186,12 +184,12 @@ impl Soeprotocol {
         self.pack_packet(SoeOpcode::Ordered as u16, DataPacket::new(data, sequence))
     }
 
-    pub fn pack_session_request(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_session_request(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<SessionRequestPacket>(SoeOpcode::SessionRequest as u16, packet)
     }
 
-    pub fn pack_session_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<SessionRequestPacket>(SoeOpcode::SessionRequest as u16, js_object)
+    pub fn pack_session_request_fromjs(&mut self, packet: SessionRequestPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::SessionRequest as u16, packet)
     }
 
     pub fn pack_session_request_packet(
@@ -207,12 +205,12 @@ impl Soeprotocol {
         )
     }
 
-    pub fn pack_session_reply(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_session_reply(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<SessionReplyPacket>(SoeOpcode::SessionReply as u16, packet)
     }
 
-    pub fn pack_session_reply_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<SessionReplyPacket>(SoeOpcode::SessionReply as u16, js_object)
+    pub fn pack_session_reply_fromjs(&mut self, packet: SessionReplyPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::SessionReply as u16, packet)
     }
 
     pub fn pack_session_reply_packet(
@@ -235,56 +233,56 @@ impl Soeprotocol {
         )
     }
 
-    pub fn pack_net_status_request(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_net_status_request(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<NetStatusRequestPacket>(SoeOpcode::NetStatusRequest as u16, packet)
     }
 
-    pub fn pack_net_status_request_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<NetStatusRequestPacket>(SoeOpcode::NetStatusRequest as u16, js_object)
+    pub fn pack_net_status_request_fromjs(&mut self, packet: NetStatusRequestPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::NetStatusRequest as u16, packet)
     }
 
-    pub fn pack_net_status_reply(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_net_status_reply(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<NetStatusReplyPacket>(SoeOpcode::NetStatusReply as u16, packet)
     }
 
-    pub fn pack_net_status_reply_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<NetStatusReplyPacket>(SoeOpcode::NetStatusReply as u16, js_object)
+    pub fn pack_net_status_reply_fromjs(&mut self, packet: NetStatusReplyPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::NetStatusReply as u16, packet)
     }
 
-    pub fn pack_multi(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_multi(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<SubBasePackets>(SoeOpcode::MultiPacket as u16, packet)
     }
 
-    pub fn pack_multi_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<SubBasePackets>(SoeOpcode::MultiPacket as u16, js_object)
+    pub fn pack_multi_fromjs(&mut self, packet: SubBasePackets) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::MultiPacket as u16, packet)
     }
 
-    pub fn pack_group(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_group(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<SubBasePackets>(SoeOpcode::Group as u16, packet)
     }
 
-    pub fn pack_group_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<SubBasePackets>(SoeOpcode::Group as u16, js_object)
+    pub fn pack_group_fromjs(&mut self, packet: SubBasePackets) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::Group as u16, packet)
     }
 
-    pub fn pack_data(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_data(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<DataPacket>(SoeOpcode::Data as u16, packet)
     }
 
-    pub fn pack_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<DataPacket>(SoeOpcode::Data as u16, js_object)
+    pub fn pack_data_fromjs(&mut self, packet: DataPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::Data as u16, packet)
     }
 
     pub fn pack_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
         self.pack_packet(SoeOpcode::Data as u16, DataPacket::new(data, sequence))
     }
 
-    pub fn pack_fragment_data(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_fragment_data(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<DataPacket>(SoeOpcode::DataFragment as u16, packet)
     }
 
-    pub fn pack_fragment_data_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<DataPacket>(SoeOpcode::DataFragment as u16, js_object)
+    pub fn pack_fragment_data_fromjs(&mut self, packet: DataPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::DataFragment as u16, packet)
     }
 
     pub fn pack_fragment_data_packet(&mut self, data: Vec<u8>, sequence: u16) -> Vec<u8> {
@@ -294,31 +292,35 @@ impl Soeprotocol {
         )
     }
 
-    pub fn pack_out_of_order(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_out_of_order(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<AckPacket>(SoeOpcode::OutOfOrder as u16, packet)
     }
 
-    pub fn pack_out_of_order_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<AckPacket>(SoeOpcode::OutOfOrder as u16, js_object)
+    pub fn pack_out_of_order_fromjs(&mut self, packet: AckPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::OutOfOrder as u16, packet)
     }
 
     pub fn pack_out_of_order_packet(&mut self, sequence: u16) -> Vec<u8> {
         self.pack_packet(SoeOpcode::OutOfOrder as u16, AckPacket { sequence })
     }
 
-    pub fn pack_ack(&mut self, packet: String) -> Vec<u8> {
+    pub fn pack_ack(&mut self, packet: String) -> Result<Vec<u8>, SoePackError> {
         self.pack_from_json::<AckPacket>(SoeOpcode::Ack as u16, packet)
     }
 
-    pub fn pack_ack_fromjs(&mut self, js_object: &JsValue) -> Vec<u8> {
-        self.pack_from_js::<AckPacket>(SoeOpcode::Ack as u16, js_object)
+    pub fn pack_ack_fromjs(&mut self, packet: AckPacket) -> Vec<u8> {
+        self.pack_packet(SoeOpcode::Ack as u16, packet)
     }
 
     pub fn pack_ack_packet(&mut self, sequence: u16) -> Vec<u8> {
         self.pack_packet(SoeOpcode::Ack as u16, AckPacket { sequence })
     }
 
-    pub fn parse(&mut self, data: Vec<u8>) -> String {
+    pub fn parse(&mut self, data: Vec<u8>) -> JsValue {
+        json_str_to_jsvalue(&self.parse_to_json_str(data))
+    }
+
+    fn parse_to_json_str(&mut self, data: Vec<u8>) -> String {
         let mut rdr = Cursor::new(&data);
         let opcode: SoeOpcode = if data.len() >= 2 {
             self.get_opcode(&mut rdr)
@@ -494,7 +496,7 @@ impl Soeprotocol {
             let sub_packet_data =
                 extract_subpacket_data(&rdr, rdr.position(), sub_packet_data_length);
             rdr.set_position(sub_packet_data_length as u64 + rdr.position());
-            let sub_packet = self.parse(sub_packet_data);
+            let sub_packet = self.parse_to_json_str(sub_packet_data);
             multi_result.push_str(&sub_packet);
             if rdr.position() == data_end {
                 break;
@@ -576,8 +578,6 @@ impl Soeprotocol {
 mod tests {
 
     use super::super::crc::append_crc;
-
-    use super::super::protocol_errors::*;
     use super::*;
 
     #[test]
@@ -588,7 +588,7 @@ mod tests {
             95, 57, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionRequest","protocol_version":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -599,7 +599,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 12] = [0, 1, 111, 103, 105, 110, 85, 100, 112, 95, 57, 2];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0, 1, 111, 103, 105, 110, 85, 100, 112,95, 57, 2], "size": 12}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -611,7 +611,7 @@ mod tests {
         let data_to_pack =
             r#"{"protocol_version":3,"session_id":1008176227,"udp_length":512,"protocol":"LoginUdp_9"}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [
@@ -626,9 +626,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"protocol_version":3,"udp_length":512,"protocol":"LoginUdp_9"}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionRequest, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::SessionRequest, data_to_pack)
+            .is_err());
     }
 
     #[test]
@@ -636,7 +636,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 10] = [0, 2, 111, 103, 105, 110, 85, 100, 112, 95];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,2,111,103,105,110,85,100,112,95], "size": 10}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -649,7 +649,7 @@ mod tests {
             0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"SessionReply","session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -659,7 +659,7 @@ mod tests {
     fn session_reply_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_pack =  r#"{"session_id":1008176227,"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [0, 2, 60, 23, 140, 99, 0, 0, 0, 0, 2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 3]
@@ -671,9 +671,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"crc_seed":0,"crc_length":2,"encrypt_method":256,"udp_length":512}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::SessionReply, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::SessionReply, data_to_pack)
+            .is_err());
     }
 
     #[test]
@@ -684,7 +684,7 @@ mod tests {
             0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -698,7 +698,7 @@ mod tests {
             0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 235, 216, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,7,251,92,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,235,216,0], "size": 43}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -710,7 +710,7 @@ mod tests {
         let data_to_pack =
         r#"{"average_update": 0, "client_tick_count": 64348, "last_client_update": 0, "last_server_update": 0, "longest_update": 0, "name": "NetStatusRequest", "packets_received": 1, "packets_sent": 2, "shortest_update": 0, "unknown_field": 60376}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [
@@ -725,9 +725,9 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_count": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::NetStatusRequest, data_to_pack)
+            .is_err());
     }
 
     #[test]
@@ -738,7 +738,7 @@ mod tests {
             0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"client_packet_received": 1, "client_packet_sent": 2, "client_tick_count": 64348, "name": "NetStatusReply", "server_packet_received": 2, "server_packet_sent": 1, "server_tick_count": 556254524, "unknown_field": 33748}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -752,7 +752,7 @@ mod tests {
             0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 131, 212, 0,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "size", "name": "Error", "raw": [0,8,251,92,33,39,197,60,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,131,212,0], "size": 43}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -764,7 +764,7 @@ mod tests {
         let data_to_pack =
         r#"{"client_packet_received": 1, "client_packet_sent": 2, "client_tick_count": 64348, "name": "NetStatusReply", "server_packet_received": 2, "server_packet_sent": 1, "server_tick_count": 556254524, "unknown_field": 33748}"#
                 .to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusReply, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusReply, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [
@@ -779,16 +779,16 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
         r#"{"client_packet_received": 0, "client_packet_sent": 0, "client_tick_cozunt": 64348, "name": "NetStatusRequest", "server_packet_received": 1, "server_packet_sent": 2, "server_tick_count": 0}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::NetStatusRequest, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::NetStatusRequest, data_to_pack)
+            .is_err());
     }
 
     #[test]
     fn ping_parse_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 2] = [0, 6];
-        let data_parsed: String = soeprotocol_class.parse(data_to_parse.to_vec());
+        let data_parsed = soeprotocol_class.parse_to_json_str(data_to_parse.to_vec());
         assert_eq!(data_parsed, r#"{"name":"Ping"}"#)
     }
 
@@ -796,7 +796,7 @@ mod tests {
     fn ping_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_pack: String = r#"{"name":"Ping"}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ping, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ping, data_to_pack).unwrap();
         assert_eq!(data_pack, [0, 6])
     }
 
@@ -805,7 +805,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 3] = [0, 17, 111];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 17, 111], "size": 3}"#,
@@ -819,7 +819,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 38, 184];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value =
             serde_json::from_str(r#"{"name":"OutOfOrder","sequence":1}"#).unwrap_or_default();
@@ -831,7 +831,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 17, 0, 1, 142, 100];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 9912, "given_crc": 36452, "name": "Error", "raw": [0, 17, 0, 1, 142, 100]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -841,7 +841,7 @@ mod tests {
     fn outoforder_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"OutOfOrder","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack).unwrap();
         assert_eq!(data_pack, [0, 17, 0, 1])
     }
 
@@ -849,9 +849,9 @@ mod tests {
     fn outoforder_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"sequednce":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::OutOfOrder, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::OutOfOrder, data_to_pack)
+            .is_err());
     }
 
     #[test]
@@ -859,7 +859,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 3] = [0, 21, 111];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 21, 111], "size": 3}"#,
@@ -873,7 +873,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 21, 0, 1, 142, 100];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value =
             serde_json::from_str(r#"{"name":"Ack","sequence":1}"#).unwrap_or_default();
@@ -884,7 +884,7 @@ mod tests {
     fn ack_pack_test() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"Ack","sequence":1}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack).unwrap();
         assert_eq!(data_pack, [0, 21, 0, 1])
     }
 
@@ -892,9 +892,7 @@ mod tests {
     fn ack_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack: String = r#"{"name":"Ack"}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class.pack(SoeOpcode::Ack, data_to_pack).is_err());
     }
 
     #[test]
@@ -902,7 +900,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 4] = [0, 3, 4, 0];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value = serde_json::from_str(
             r#"{"error": "size", "name": "Error", "raw": [0, 3, 4, 0], "size": 4}"#,
@@ -921,7 +919,7 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "corruption", "name": "Error", "data_end": 75,"position": 58, "subpacket_length": 247,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -936,7 +934,7 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "name": "Error", "expected_crc": 62304,"given_crc": 2806,"raw":[0, 3, 54, 0, 21, 0, 206, 67, 0, 9, 0, 1, 0, 25, 41, 141, 45, 189, 85, 241, 64, 165, 71,228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225, 169, 102,204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11, 247, 177, 138,145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -952,7 +950,7 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -968,7 +966,7 @@ mod tests {
             145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246, 10, 27,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"MultiPacket","sub_packets":[{"name":"Ack","sequence":206},{"name":"Data","sequence":1,"data":[0,25,41,141,45,189,85,241,64,165,71,228,114,81,54,5,184,205,104,0,125,184,210,74,0,247,152,225,169,102,204,158,233,202,228,34,202,238,136,31,3,121,222,106,11,247,177,138,145,21,221,187,36,170,37,171,6,32,11,180,97,10,246]}]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -981,7 +979,7 @@ mod tests {
         71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
         169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
         247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [
@@ -1000,9 +998,9 @@ mod tests {
         71, 228, 114, 81, 54, 5, 184, 205, 104, 0, 125, 184, 210, 74, 0, 247, 152, 225,
         169, 102, 204, 158, 233, 202, 228, 34, 202, 238, 136, 31, 3, 121, 222, 106, 11,
         247, 177, 138, 145, 21, 221, 187, 36, 170, 37, 171, 6, 32, 11, 180, 97, 10, 246]]}"#.to_owned();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::MultiPacket, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::MultiPacket, data_to_pack)
+            .is_err());
     }
 
     #[test]
@@ -1014,7 +1012,7 @@ mod tests {
             117, 146, 204, 94, 60,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204,94,60]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -1029,7 +1027,7 @@ mod tests {
             117, 146, 204, 94, 60,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"Data","sequence":4,"data":[252,100,40,209,68,247,21,93,18,172,91,68,145,53,24,155,2,113,179,28,217,33,80,76,9,235,87,98,233,235,220,124,107,61,62,132,117,146,204]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -1044,7 +1042,7 @@ mod tests {
             117, 146, 204, 94, 61,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"error": "crc", "expected_crc": 24124, "given_crc": 24125, "name": "Error", "raw": [0, 9, 0, 4, 252, 100, 40, 209, 68, 247, 21, 93, 18, 172, 91, 68, 145, 53, 24, 155, 2,113, 179, 28, 217, 33, 80, 76, 9, 235, 87, 98, 233, 235, 220, 124, 107, 61, 62, 132,117, 146, 204, 94, 61]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -1055,7 +1053,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_parse: [u8; 6] = [0, 27, 147, 127, 1, 0];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value =
             serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
@@ -1069,7 +1067,7 @@ mod tests {
         let mut data_to_parse: Vec<u8> = [0, 27, 147, 127, 1, 0].to_vec();
         append_crc(&mut data_to_parse, 0);
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value =
             serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
@@ -1082,7 +1080,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(true, 0);
         let data_to_parse: [u8; 6] = [0, 27, 147, 127, 1, 1];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data: serde_json::Value =
             serde_json::from_str(r#"{"name":"Ordered","order":37759,"data":[1,0]}"#)
@@ -1095,7 +1093,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"sequence":0,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [0, 9, 0, 0, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
@@ -1107,7 +1105,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"sequence":1,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ordered, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Ordered, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [0, 27, 0, 1, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
@@ -1118,9 +1116,7 @@ mod tests {
     fn data_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::Data, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class.pack(SoeOpcode::Data, data_to_pack).is_err());
     }
 
     #[test]
@@ -1143,7 +1139,7 @@ mod tests {
             18, 0, 26, 152, 33, 115, 61, 208, 21,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -1169,7 +1165,7 @@ mod tests {
             18, 0, 26, 152, 33, 115, 61, 208, 21,
         ];
         let data_parsed: serde_json::Value =
-            serde_json::from_str(&soeprotocol_class.parse(data_to_parse.to_vec()))
+            serde_json::from_str(&soeprotocol_class.parse_to_json_str(data_to_parse.to_vec()))
                 .unwrap_or_default();
         let succesful_data:serde_json::Value = serde_json::from_str(r#"{"name":"DataFragment","sequence":2,"data":[208,127,31,117,87,54,201,180,188,226,247,253,136,66,78,125,224,112,23,87,147,110,18,68,183,87,20,3,65,116,82,111,93,219,229,20,61,238,143,63,8,137,8,196,128,89,59,4,198,191,207,141,23,164,242,77,176,206,49,45,207,210,17,33,75,177,157,242,169,37,60,87,245,58,2,130,102,146,227,66,193,153,155,105,230,203,120,114,160,223,229,190,129,106,19,25,8,52,55,8,100,68,109,228,178,186,148,108,138,242,136,66,219,25,73,129,110,31,121,32,246,86,156,212,85,217,213,119,165,140,83,95,6,183,184,251,73,102,221,156,240,204,50,217,217,13,218,2,19,44,143,73,168,109,67,176,129,225,187,171,12,146,21,66,252,150,143,142,46,39,72,12,22,222,7,29,63,201,227,251,9,28,0,100,84,153,84,212,163,78,135,33,66,20,195,223,62,214,32,59,6,187,222,99,29,34,87,81,61,63,174,255,1,85,241,6,10,152,237,52,51,126,149,218,125,232,199,40,113,139,187,43,232,209,167,226,91,236,212,165,117,19,118,110,18,0,26,152,33,115,61,208,21]}"#).unwrap_or_default();
         assert_eq!(data_parsed, succesful_data)
@@ -1180,7 +1176,7 @@ mod tests {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack =
             r#"{"sequence":2,"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack);
+        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack).unwrap();
         assert_eq!(
             data_pack,
             [0, 13, 0, 2, 2, 1, 1, 0, 0, 0, 1, 1, 3, 0, 0, 0, 115, 111, 101, 0, 0, 0, 0]
@@ -1191,8 +1187,8 @@ mod tests {
     fn data_fragment_pack_test_deserializing_error() {
         let mut soeprotocol_class = super::Soeprotocol::initialize(false, 0);
         let data_to_pack = r#"{"data":[2,1,1,0,0,0,1,1,3,0,0,0,115,111,101,0,0,0,0]}"#.to_string();
-        let data_pack: Vec<u8> = soeprotocol_class.pack(SoeOpcode::DataFragment, data_to_pack);
-        let data_pack_opcode: u16 = u16::from_be_bytes([data_pack[0], data_pack[1]]);
-        assert_eq!(data_pack_opcode, ErrorType::Deserializing as u16)
+        assert!(soeprotocol_class
+            .pack(SoeOpcode::DataFragment, data_to_pack)
+            .is_err());
     }
 }
