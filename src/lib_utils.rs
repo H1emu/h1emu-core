@@ -10,11 +10,7 @@ pub fn str_from_u8_nul_utf8_checked(utf8_src: &[u8]) -> &str {
 }
 
 pub fn u8_from_str_nul_utf8_unchecked(data: &str) -> Vec<u8> {
-    let mut data_u8 = vec![];
-
-    for b in data.chars() {
-        data_u8.push(b as u8);
-    }
+    let mut data_u8: Vec<u8> = data.bytes().collect();
     data_u8.push(0);
     data_u8
 }
@@ -29,11 +25,5 @@ pub fn read_prefixed_string_le(buffer: &[u8], offset: usize, length: u32) -> Str
     }
 }
 pub fn sat(x: f32) -> f32 {
-    if x < 0.0 {
-        0.0
-    } else if x > 1.0 {
-        1.0
-    } else {
-        x
-    }
+    x.clamp(0.0, 1.0)
 }

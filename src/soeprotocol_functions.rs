@@ -20,26 +20,26 @@ pub fn check_min_size(rdr: &Cursor<&std::vec::Vec<u8>>, min_size: usize, use_crc
     }
 }
 
-pub fn disconnect_reason_to_string(reason_id: u16) -> String {
+pub fn disconnect_reason_to_string(reason_id: u16) -> &'static str {
     match reason_id {
-        0 => "DisconnectReasonIcmpError".to_string(),
-        1 => "DisconnectReasonTimeout".to_string(),
-        2 => "DisconnectReasonNone".to_string(),
-        3 => "DisconnectReasonOtherSideTerminated".to_string(),
-        4 => "DisconnectReasonManagerDeleted".to_string(),
-        5 => "DisconnectReasonConnectFail".to_string(),
-        6 => "DisconnectReasonApplication".to_string(),
-        7 => "DisconnectReasonUnreachableConnection".to_string(),
-        8 => "DisconnectReasonUnacknowledgedTimeout".to_string(),
-        9 => "DisconnectReasonNewConnectionAttempt".to_string(),
-        10 => "DisconnectReasonConnectionRefused".to_string(),
-        11 => "DisconnectReasonConnectErro".to_string(),
-        12 => "DisconnectReasonConnectingToSelf".to_string(),
-        13 => "DisconnectReasonReliableOverflow".to_string(),
-        14 => "DisconnectReasonApplicationReleased".to_string(),
-        15 => "DisconnectReasonCorruptPacket".to_string(),
-        16 => "DisconnectReasonProtocolMismatch".to_string(),
-        _ => "unknown".to_string(),
+        0 => "DisconnectReasonIcmpError",
+        1 => "DisconnectReasonTimeout",
+        2 => "DisconnectReasonNone",
+        3 => "DisconnectReasonOtherSideTerminated",
+        4 => "DisconnectReasonManagerDeleted",
+        5 => "DisconnectReasonConnectFail",
+        6 => "DisconnectReasonApplication",
+        7 => "DisconnectReasonUnreachableConnection",
+        8 => "DisconnectReasonUnacknowledgedTimeout",
+        9 => "DisconnectReasonNewConnectionAttempt",
+        10 => "DisconnectReasonConnectionRefused",
+        11 => "DisconnectReasonConnectErro",
+        12 => "DisconnectReasonConnectingToSelf",
+        13 => "DisconnectReasonReliableOverflow",
+        14 => "DisconnectReasonApplicationReleased",
+        15 => "DisconnectReasonCorruptPacket",
+        16 => "DisconnectReasonProtocolMismatch",
+        _ => "unknown",
     }
 }
 

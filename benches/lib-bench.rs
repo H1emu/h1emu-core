@@ -211,9 +211,8 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    let session_request_to_pack_object = soeprotocol_class
-        .get_session_request_object(session_request_to_pack.to_string())
-        .unwrap();
+    let session_request_to_pack_object =
+        serde_json::from_str::<SessionRequestPacket>(&session_request_to_pack).unwrap();
     c.bench_function("session_request_pack_from_object", |b| {
         b.iter(|| {
             soeprotocol_class.pack_session_request_object(session_request_to_pack_object.clone())
@@ -227,9 +226,8 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    let session_reply_to_pack_object = soeprotocol_class
-        .get_session_reply_object(session_reply_to_pack.to_string())
-        .unwrap();
+    let session_reply_to_pack_object =
+        serde_json::from_str::<SessionReplyPacket>(&session_reply_to_pack).unwrap();
     c.bench_function("session_reply_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_session_reply_object(session_reply_to_pack_object.clone()))
     });
@@ -244,18 +242,14 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    let outoforder_to_pack_object = soeprotocol_class
-        .get_ack_object(outoforder_to_pack.to_string())
-        .unwrap();
+    let outoforder_to_pack_object = serde_json::from_str::<AckPacket>(&outoforder_to_pack).unwrap();
     c.bench_function("outoforder_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_out_of_order_object(outoforder_to_pack_object.clone()))
     });
     c.bench_function("ack_to_pack", |b| {
         b.iter(|| soeprotocol_class.pack(SoeOpcode::Ack, black_box(ack_to_pack.to_string())))
     });
-    let ack_to_pack_object = soeprotocol_class
-        .get_ack_object(ack_to_pack.to_string())
-        .unwrap();
+    let ack_to_pack_object = serde_json::from_str::<AckPacket>(&ack_to_pack).unwrap();
     c.bench_function("ack_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_ack_object(ack_to_pack_object.clone()))
     });
@@ -264,9 +258,7 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             soeprotocol_class.pack(SoeOpcode::MultiPacket, black_box(multi_to_pack.to_string()))
         })
     });
-    let multi_to_pack_object = soeprotocol_class
-        .get_multi_object(multi_to_pack.to_string())
-        .unwrap();
+    let multi_to_pack_object = serde_json::from_str::<SubBasePackets>(&multi_to_pack).unwrap();
     c.bench_function("multi_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_multi_object(multi_to_pack_object.clone()))
     });
@@ -281,15 +273,11 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    let data_to_pack_object = soeprotocol_class
-        .get_data_object(data_to_pack.to_string())
-        .unwrap();
+    let data_to_pack_object = serde_json::from_str::<DataPacket>(&data_to_pack).unwrap();
     c.bench_function("data_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_data_object(data_to_pack_object.clone()))
     });
-    let data_ordered_to_pack_object = soeprotocol_class
-        .get_data_object(data_to_pack.to_string())
-        .unwrap();
+    let data_ordered_to_pack_object = serde_json::from_str::<DataPacket>(&data_to_pack).unwrap();
     c.bench_function("data_ordered_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_ordered_object(data_ordered_to_pack_object.clone()))
     });
@@ -301,9 +289,8 @@ fn soeprotocol_pack_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    let data_fragment_to_pack_object = soeprotocol_class
-        .get_data_object(data_fragment_to_pack.to_string())
-        .unwrap();
+    let data_fragment_to_pack_object =
+        serde_json::from_str::<DataPacket>(&data_fragment_to_pack).unwrap();
     c.bench_function("data_fragment_to_pack_from_object", |b| {
         b.iter(|| soeprotocol_class.pack_fragment_data_object(data_fragment_to_pack_object.clone()))
     });

@@ -1,5 +1,14 @@
+use byteorder::{BigEndian, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+
+use super::lib_utils::u8_from_str_nul_utf8_unchecked;
+use super::soeprotocol_functions::write_data_length;
+
+pub trait PacketWrite {
+    fn write_to(&self, wtr: &mut Vec<u8>);
+}
+
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SessionRequestPacket {
@@ -19,17 +28,19 @@ impl SessionRequestPacket {
             protocol,
         }
     }
-    pub fn get_session_id(&self) -> u32 {
-        self.session_id
-    }
-    pub fn get_protocol_version(&self) -> u32 {
-        self.protocol_version
-    }
-    pub fn get_udp_length(&self) -> u32 {
-        self.udp_length
-    }
     pub fn get_protocol(&self) -> String {
         self.protocol.clone()
+    }
+}
+impl PacketWrite for SessionRequestPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u32::<BigEndian>(self.protocol_version)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.session_id)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.udp_length)
+            .unwrap_or_default();
+        wtr.extend_from_slice(&u8_from_str_nul_utf8_unchecked(&self.protocol));
     }
 }
 
@@ -60,20 +71,19 @@ impl SessionReplyPacket {
             udp_length,
         }
     }
-    pub fn get_session_id(&self) -> u32 {
-        self.session_id
-    }
-    pub fn get_crc_seed(&self) -> u32 {
-        self.crc_seed
-    }
-    pub fn get_crc_length(&self) -> u8 {
-        self.crc_length
-    }
-    pub fn get_encrypt_method(&self) -> u16 {
-        self.encrypt_method
-    }
-    pub fn get_udp_length(&self) -> u32 {
-        self.udp_length
+}
+impl PacketWrite for SessionReplyPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u32::<BigEndian>(self.session_id)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.crc_seed)
+            .unwrap_or_default();
+        wtr.write_u8(self.crc_length).unwrap_or_default();
+        wtr.write_u16::<BigEndian>(self.encrypt_method)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.udp_length)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(3).unwrap_or_default();
     }
 }
 
@@ -110,26 +120,23 @@ impl NetStatusReplyPacket {
             unknown_field,
         }
     }
-    pub fn get_client_tick_count(&self) -> u16 {
-        self.client_tick_count
-    }
-    pub fn get_server_tick_count(&self) -> u32 {
-        self.server_tick_count
-    }
-    pub fn get_client_packet_sent(&self) -> u64 {
-        self.client_packet_sent
-    }
-    pub fn get_client_packet_received(&self) -> u64 {
-        self.client_packet_received
-    }
-    pub fn get_server_packet_sent(&self) -> u64 {
-        self.server_packet_sent
-    }
-    pub fn get_server_packet_received(&self) -> u64 {
-        self.server_packet_received
-    }
-    pub fn get_unknown_field(&self) -> u16 {
-        self.unknown_field
+}
+impl PacketWrite for NetStatusReplyPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u16::<BigEndian>(self.client_tick_count)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.server_tick_count)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.client_packet_sent)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.client_packet_received)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.server_packet_sent)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.server_packet_received)
+            .unwrap_or_default();
+        wtr.write_u16::<BigEndian>(self.unknown_field)
+            .unwrap_or_default();
     }
 }
 
@@ -154,13 +161,20 @@ impl DataPacket {
     pub fn new(data: Vec<u8>, sequence: u16) -> Self {
         Self { data, sequence }
     }
-    pub fn get_sequence(&self) -> u16 {
-        self.sequence
-    }
 }
 impl DataPacket {
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
     pub fn get_data(&mut self) -> &mut Vec<u8> {
         &mut self.data
+    }
+}
+impl PacketWrite for DataPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u16::<BigEndian>(self.sequence)
+            .unwrap_or_default();
+        wtr.extend_from_slice(&self.data);
     }
 }
 
@@ -175,8 +189,11 @@ impl AckPacket {
     pub fn new(sequence: u16) -> Self {
         Self { sequence }
     }
-    pub fn get_sequence(&self) -> u16 {
-        self.sequence
+}
+impl PacketWrite for AckPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u16::<BigEndian>(self.sequence)
+            .unwrap_or_default();
     }
 }
 
@@ -219,32 +236,27 @@ impl NetStatusRequestPacket {
             unknown_field,
         }
     }
-    pub fn get_client_tick_count(&self) -> u16 {
-        self.client_tick_count
-    }
-    pub fn get_last_client_update(&self) -> u32 {
-        self.last_client_update
-    }
-    pub fn get_average_update(&self) -> u32 {
-        self.average_update
-    }
-    pub fn get_shortest_update(&self) -> u32 {
-        self.shortest_update
-    }
-    pub fn get_longest_update(&self) -> u32 {
-        self.longest_update
-    }
-    pub fn get_last_server_update(&self) -> u32 {
-        self.last_server_update
-    }
-    pub fn get_packets_sent(&self) -> u64 {
-        self.packets_sent
-    }
-    pub fn get_packets_received(&self) -> u64 {
-        self.packets_received
-    }
-    pub fn get_unknown_field(&self) -> u16 {
-        self.unknown_field
+}
+impl PacketWrite for NetStatusRequestPacket {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        wtr.write_u16::<BigEndian>(self.client_tick_count)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.last_client_update)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.average_update)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.shortest_update)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.longest_update)
+            .unwrap_or_default();
+        wtr.write_u32::<BigEndian>(self.last_server_update)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.packets_sent)
+            .unwrap_or_default();
+        wtr.write_u64::<BigEndian>(self.packets_received)
+            .unwrap_or_default();
+        wtr.write_u16::<BigEndian>(self.unknown_field)
+            .unwrap_or_default();
     }
 }
 
@@ -300,5 +312,13 @@ impl SubBasePackets {
     }
     pub fn get_sub_packets(&self) -> &Vec<Vec<u8>> {
         &self.sub_packets
+    }
+}
+impl PacketWrite for SubBasePackets {
+    fn write_to(&self, wtr: &mut Vec<u8>) {
+        for packet in &self.sub_packets {
+            write_data_length(wtr, packet.len());
+            wtr.extend_from_slice(packet);
+        }
     }
 }
